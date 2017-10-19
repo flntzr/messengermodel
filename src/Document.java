@@ -12,9 +12,9 @@ public class Document extends BaseEntity {
     private byte[] content;
 
     protected Document(){
-        contentHash = new byte[32];
-        contentType = new char[64];
-        content = new byte[16777215];
+        this.contentHash = new byte[32];
+        this.contentType = new char[64];
+        this.content = new byte[16777215];
     }
 
     public byte[] getContentHash() {
