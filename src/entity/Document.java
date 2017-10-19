@@ -1,4 +1,4 @@
-import sun.plugin2.message.Message;
+package entity;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

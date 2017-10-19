@@ -1,4 +1,4 @@
-package messengermodel;
+package entity;
 
 public class Main {
 

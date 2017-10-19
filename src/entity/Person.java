@@ -1,6 +1,7 @@
+package entity;
 import java.util.List;
 
-public class Person {
+public class Person extends BaseEntity {
 	private char[] mail;
 	private byte[] passwordHash;
 	private Group group;
@@ -17,6 +18,7 @@ public class Person {
 	}
 
 	public static byte[] passwordHash(String password) {
+		return null;
 	}
 
 	public char[] getMail() {
