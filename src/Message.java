@@ -3,4 +3,5 @@
  */
 public class Message extends BaseEntity {
 
+    private Person author;
 }
