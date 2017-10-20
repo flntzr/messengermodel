@@ -2,7 +2,7 @@ package entity;
 import java.util.List;
 
 public class Person extends BaseEntity {
-	private char[] mail;
+	private String mail;
 	private byte[] passwordHash;
 	private Group group;
 	private Name name;
@@ -13,7 +13,6 @@ public class Person extends BaseEntity {
 	private List<Person> peopleObserved;
 
 	public Person() {
-		this.mail = new char[128];
 		this.passwordHash = new byte[32];
 	}
 
@@ -21,11 +20,11 @@ public class Person extends BaseEntity {
 		return null;
 	}
 
-	public char[] getMail() {
+	public String getMail() {
 		return mail;
 	}
 
-	public void setMail(char[] mail) {
+	public void setMail(String mail) {
 		this.mail = mail;
 	}
 

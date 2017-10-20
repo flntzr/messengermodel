@@ -8,12 +8,11 @@ import java.security.NoSuchAlgorithmException;
  */
 public class Document extends BaseEntity {
     private byte[] contentHash;
-    private char[] contentType;
+    private String contentType;
     private byte[] content;
 
     protected Document(){
         this.contentHash = new byte[32];
-        this.contentType = new char[64];
         this.content = new byte[16777215];
     }
 
@@ -25,11 +24,11 @@ public class Document extends BaseEntity {
         this.contentHash = contentHash;
     }
 
-    public char[] getContentType() {
+    public String getContentType() {
         return contentType;
     }
 
-    public void setContentType(char[] contentType) {
+    public void setContentType(String contentType) {
         this.contentType = contentType;
     }
 

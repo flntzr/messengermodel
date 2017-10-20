@@ -2,45 +2,41 @@ package entity;
 
 public class Address {
 
-	private char[] street;
-	private char[] postcode;
-	private char[] city;
+	private String street;
+	private String postcode;
+	private String city;
 
 
 	public Address() {
-		
-		setStreet(new char[64]);
-		setPostcode(new char[16]);
-		setCity(new char[63]);
 	}
 
-
-	public char[] getStreet() {
+	
+	public String getStreet() {
 		return street;
 	}
 
 
-	public void setStreet(char[] street) {
+	public void setStreet(String street) {
 		this.street = street;
 	}
 
 
-	public char[] getPostcode() {
+	public String getPostcode() {
 		return postcode;
 	}
 
 
-	public void setPostcode(char[] postcode) {
+	public void setPostcode(String postcode) {
 		this.postcode = postcode;
 	}
 
 
-	public char[] getCity() {
+	public String getCity() {
 		return city;
 	}
 
 
-	public void setCity(char[] city) {
+	public void setCity(String city) {
 		this.city = city;
 	}
 	

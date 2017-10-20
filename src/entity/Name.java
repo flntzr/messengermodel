@@ -2,28 +2,25 @@ package entity;
 
 public class Name {
 
-	private char[] given;
-	private char[] family; 
+	private String given;
+	private String family; 
 
 	public Name(){
-		
-		given = new char[31];
-		family = new char[31];
 	}
-	
-	public char[] getGiven() {
+
+	public String getGiven() {
 		return given;
 	}
 
-	public void setGiven(char[] street) {
-		this.given = street;
+	public void setGiven(String given) {
+		this.given = given;
 	}
 
-	public char[] getFamily() {
+	public String getFamily() {
 		return family;
 	}
 
-	public void setFamily(char[] family) {
+	public void setFamily(String family) {
 		this.family = family;
 	}
 	

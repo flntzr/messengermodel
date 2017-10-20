@@ -6,10 +6,9 @@ public class Message extends BaseEntity {
 
     private Person author;
     private BaseEntity subject;
-    private char[] body;
+    private String body;
 
     protected Message(){
-        this.body = new char[4093];
     }
 
     public Person getAuthor() {
@@ -28,11 +27,11 @@ public class Message extends BaseEntity {
         this.subject = subject;
     }
 
-    public char[] getBody() {
+    public String getBody() {
         return body;
     }
 
-    public void setBody(char[] body) {
+    public void setBody(String body) {
         this.body = body;
     }
 }
