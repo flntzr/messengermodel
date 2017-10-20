@@ -1,56 +1,45 @@
 package entity;
-import java.util.List;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
-public class BaseEntity implements Comparable{
-    private long identity;
-    private int version;
-    private long creationTimestamp;
-    List<Message> messagesCaused;
+public abstract class BaseEntity implements Comparable<BaseEntity> {
+	private long identity;
+	private int version;
+	private long creationTimestamp;
+	Set<Message> messagesCaused;
 
-    protected BaseEntity(){
+	public BaseEntity() {
+		this.version = 1;
+		this.messagesCaused = new HashSet<>();
+		this.creationTimestamp = System.currentTimeMillis();
+	}
 
-    }
+	public long getIdentity() {
+		return identity;
+	}
 
-    public long getIdentity() {
-        return identity;
-    }
+	public int getVersion() {
+		return version;
+	}
 
-    public void setIdentity(long identity) {
-        this.identity = identity;
-    }
+	public void setVersion(int version) {
+		this.version = version;
+	}
 
-    public int getVersion() {
-        return version;
-    }
+	public long getCreationTimestamp() {
+		return creationTimestamp;
+	}
 
-    public void setVersion(int version) {
-        this.version = version;
-    }
+	public Set<Message> getMessagesCaused() {
+		return messagesCaused;
+	}
 
-    public long getCreationTimestamp() {
-        return creationTimestamp;
-    }
-
-    public void setCreationTimestamp(long creationTimestamp) {
-        this.creationTimestamp = creationTimestamp;
-    }
-
-    public List<Message> getMessagesCaused() {
-        return messagesCaused;
-    }
-
-    public void setMessagesCaused(List<Message> messagesCaused) {
-        this.messagesCaused = messagesCaused;
-    }
-
-    @Override
-    public int compareTo(Object o) {
-    	if (o instanceof BaseEntity) {
-    		return this.identity < ((BaseEntity) o).identity ? -1 : this.identity > ((BaseEntity) o).identity ? 1 : 0;
-    	}
-    	return 1;
-    }
+	@Override
+	public int compareTo(BaseEntity o) {
+		return this.identity < ((BaseEntity) o).identity ? -1 : this.identity > ((BaseEntity) o).identity ? +1 : 0;
+	}
 }
