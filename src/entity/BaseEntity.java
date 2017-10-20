@@ -48,6 +48,9 @@ public class BaseEntity implements Comparable{
 
     @Override
     public int compareTo(Object o) {
-        return this.identity < ((BaseEntity) o).identity ? -1 : this.identity > ((BaseEntity) o).identity ? 1 : 0;
+    	if (o instanceof BaseEntity) {
+    		return this.identity < ((BaseEntity) o).identity ? -1 : this.identity > ((BaseEntity) o).identity ? 1 : 0;
+    	}
+    	return 1;
     }
 }
