@@ -11,10 +11,11 @@ public class Document extends BaseEntity {
 	private byte[] contentHash;
 	private String contentType;
 	private byte[] content;
+	private final static byte[] EMPTY_CONTENT_HASH = Document.mediaHash(new byte[0]);
 
 	public Document() {
 		this.content = new byte[0];
-		this.contentHash = Document.mediaHash(this.content);
+		this.contentHash = Document.EMPTY_CONTENT_HASH;
 	}
 
 	public byte[] getContentHash() {
