@@ -1,5 +1,5 @@
 package entity;
-import java.util.List;
+import java.util.Set;
 
 public class Person extends BaseEntity {
 	private String mail;
@@ -8,9 +8,9 @@ public class Person extends BaseEntity {
 	private Name name;
 	private Address address;
 	private Document avatar;
-	private List<Message> messagesAuthored;
-	private List<Person> peopleObserving;
-	private List<Person> peopleObserved;
+	private Set<Message> messagesAuthored;
+	private Set<Person> peopleObserving;
+	private Set<Person> peopleObserved;
 
 	public Person() {
 		this.passwordHash = new byte[32];
@@ -60,29 +60,28 @@ public class Person extends BaseEntity {
 		this.avatar = avatar;
 	}
 
-	public List<Message> getMessagesAuthored() {
+	public Set<Message> getMessagesAuthored() {
 		return messagesAuthored;
 	}
 
-	public void setMessagesAuthored(List<Message> messagesAuthored) {
+	public void setMessagesAuthored(Set<Message> messagesAuthored) {
 		this.messagesAuthored = messagesAuthored;
 	}
 
-	public List<Person> getPeopleObserving() {
+	public Set<Person> getPeopleObserving() {
 		return peopleObserving;
 	}
 
-	public void setPeopleObserving(List<Person> peopleObserving) {
+	public void setPeopleObserving(Set<Person> peopleObserving) {
 		this.peopleObserving = peopleObserving;
 	}
 
-	public List<Person> getPeopleObserved() {
+	public Set<Person> getPeopleObserved() {
 		return peopleObserved;
 	}
 
-	public void setPeopleObserved(List<Person> peopleObserved) {
+	public void setPeopleObserved(Set<Person> peopleObserved) {
 		this.peopleObserved = peopleObserved;
-	}
-	
+	}	
 	
 }
