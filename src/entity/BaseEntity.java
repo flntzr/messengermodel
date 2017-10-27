@@ -40,6 +40,9 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 
 	@Override
 	public int compareTo(BaseEntity o) {
-		return this.identity < ((BaseEntity) o).identity ? -1 : this.identity > ((BaseEntity) o).identity ? +1 : 0;
+		if (this.identity == o.identity) {
+			return 0;
+		}
+		return this.identity < o.identity ? -1 : +1;
 	}
 }
