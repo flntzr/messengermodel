@@ -1,20 +1,21 @@
 package entity;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
 public abstract class BaseEntity implements Comparable<BaseEntity> {
-	private long identity;
+	private final long identity;
 	private int version;
-	private long creationTimestamp;
-	Set<Message> messagesCaused;
+	private final long creationTimestamp;
+	private final Set<Message> messagesCaused;
 
 	public BaseEntity() {
+		this.identity = 0;
 		this.version = 1;
-		this.messagesCaused = new HashSet<>();
+		this.messagesCaused = Collections.emptySet();
 		this.creationTimestamp = System.currentTimeMillis();
 	}
 

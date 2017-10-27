@@ -1,6 +1,5 @@
 package entity;
 
-public class Group {
-	protected Group ADMIN;
-	protected Group USER;
+public enum Group {
+	ADMIN, USER
 }

@@ -1,37 +1,36 @@
 package entity;
+
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
 public class Message extends BaseEntity {
 
-    private Person author;
-    private BaseEntity subject;
-    private String body;
+	private Person author;
+	private BaseEntity subject;
+	private String body;
 
-    protected Message(){
-    }
+	public Message(Person author, BaseEntity subject) {
+		this.author = author;
+		this.subject = subject;
+	}
 
-    public Person getAuthor() {
-        return author;
-    }
+	protected Message() {
+		this(null, null);
+	}
 
-    public void setAuthor(Person author) {
-        this.author = author;
-    }
+	public Person getAuthor() {
+		return author;
+	}
 
-    public BaseEntity getSubject() {
-        return subject;
-    }
+	public BaseEntity getSubject() {
+		return subject;
+	}
 
-    public void setSubject(BaseEntity subject) {
-        this.subject = subject;
-    }
+	public String getBody() {
+		return body;
+	}
 
-    public String getBody() {
-        return body;
-    }
-
-    public void setBody(String body) {
-        this.body = body;
-    }
+	public void setBody(String body) {
+		this.body = body;
+	}
 }

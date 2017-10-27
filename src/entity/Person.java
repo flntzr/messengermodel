@@ -1,4 +1,8 @@
 package entity;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public class Person extends BaseEntity {
@@ -12,12 +16,17 @@ public class Person extends BaseEntity {
 	private Set<Person> peopleObserving;
 	private Set<Person> peopleObserved;
 
-	public Person() {
-		this.passwordHash = new byte[32];
+	static public byte[] passwordHash(String password) {
+		return Document.mediaHash(password.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public static byte[] passwordHash(String password) {
-		return null;
+	public Person() {
+		this.passwordHash = new byte[32];
+		this.name = new Name();
+		this.address = new Address();
+		this.messagesAuthored = Collections.emptySet();
+		this.peopleObserving = Collections.emptySet();
+		this.peopleObserved = new HashSet<>();
 	}
 
 	public String getMail() {
@@ -26,6 +35,14 @@ public class Person extends BaseEntity {
 
 	public void setMail(String mail) {
 		this.mail = mail;
+	}
+
+	public byte[] getPasswordHash() {
+		return passwordHash;
+	}
+
+	public void setPasswordHash(byte[] passwordHash) {
+		this.passwordHash = passwordHash;
 	}
 
 	public Group getGroup() {
@@ -40,16 +57,8 @@ public class Person extends BaseEntity {
 		return name;
 	}
 
-	public void setName(Name name) {
-		this.name = name;
-	}
-
 	public Address getAddress() {
 		return address;
-	}
-
-	public void setAddress(Address address) {
-		this.address = address;
 	}
 
 	public Document getAvatar() {
@@ -64,24 +73,12 @@ public class Person extends BaseEntity {
 		return messagesAuthored;
 	}
 
-	public void setMessagesAuthored(Set<Message> messagesAuthored) {
-		this.messagesAuthored = messagesAuthored;
-	}
-
 	public Set<Person> getPeopleObserving() {
 		return peopleObserving;
-	}
-
-	public void setPeopleObserving(Set<Person> peopleObserving) {
-		this.peopleObserving = peopleObserving;
 	}
 
 	public Set<Person> getPeopleObserved() {
 		return peopleObserved;
 	}
 
-	public void setPeopleObserved(Set<Person> peopleObserved) {
-		this.peopleObserved = peopleObserved;
-	}	
-	
 }

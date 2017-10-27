@@ -1,6 +1,5 @@
 package entity;
 
-import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -11,7 +10,7 @@ public class Document extends BaseEntity {
 	private byte[] contentHash;
 	private String contentType;
 	private byte[] content;
-	private final static byte[] EMPTY_CONTENT_HASH = Document.mediaHash(new byte[0]);
+	private static final byte[] EMPTY_CONTENT_HASH = Document.mediaHash(new byte[0]);
 
 	public Document() {
 		this.content = new byte[0];
