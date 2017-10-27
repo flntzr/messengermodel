@@ -24,6 +24,7 @@ public class Person extends BaseEntity {
 		this.passwordHash = new byte[32];
 		this.name = new Name();
 		this.address = new Address();
+		this.group = Group.USER;
 		this.messagesAuthored = Collections.emptySet();
 		this.peopleObserving = Collections.emptySet();
 		this.peopleObserved = new HashSet<>();
