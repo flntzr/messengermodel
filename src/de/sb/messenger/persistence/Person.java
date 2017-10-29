@@ -1,19 +1,44 @@
-package entity;
+package de.sb.messenger.persistence;
 
+import javax.persistence.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+
+@Entity
+@Table(name = "Person", schema = "messenger")
+@PrimaryKeyJoinColumn
 public class Person extends BaseEntity {
+
+	@Column(name = "email")
 	private String mail;
+
+	@Column(name = "passwordHash")
 	private byte[] passwordHash;
+
+	@Column(name = "groupAlias")
+	@Enumerated
 	private Group group;
+
+	@Embedded
 	private Name name;
+
+	@Embedded
 	private Address address;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "avatarReference")
 	private Document avatar;
+
+	@OneToMany(mappedBy = "author")
 	private Set<Message> messagesAuthored;
+
+	@ManyToMany(mappedBy = "peopleObserved")
 	private Set<Person> peopleObserving;
+
+	@ManyToMany(mappedBy = "peopleObserving")
 	private Set<Person> peopleObserved;
 
 	static public byte[] passwordHash(String password) {

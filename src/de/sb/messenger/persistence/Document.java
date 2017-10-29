@@ -1,15 +1,27 @@
-package entity;
+package de.sb.messenger.persistence;
 
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
+@Entity
+@Table(name = "Document")
 public class Document extends BaseEntity {
+	@Column(name = "contentHash")
 	private byte[] contentHash;
+
+	@Column(name = "contentType")
 	private String contentType;
+
+	@Column(name = "content")
 	private byte[] content;
+
 	private static final byte[] EMPTY_CONTENT_HASH = Document.mediaHash(new byte[0]);
 
 	public Document() {

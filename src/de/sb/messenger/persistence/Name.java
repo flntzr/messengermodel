@@ -1,8 +1,15 @@
-package entity;
+package de.sb.messenger.persistence;
 
+
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+
+@Embeddable
 public class Name {
 
+	@Column(name = "givenName")
 	private String given;
+	@Column(name = "familyName")
 	private String family; 
 
 	public Name(){

@@ -1,15 +1,28 @@
-package entity;
+package de.sb.messenger.persistence;
 
+import javax.persistence.*;
 import java.util.Collections;
 import java.util.Set;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn
+@Entity
+@Table(name = "BaseEntity", schema = "messenger")
 public abstract class BaseEntity implements Comparable<BaseEntity> {
+	@Id
+	@GeneratedValue
 	private final long identity;
+
+	@Column(name = "version")
 	private int version;
+
+	@Column(name = "creationTimestamp")
 	private final long creationTimestamp;
+
+	@OneToMany(mappedBy = "subject")
 	private final Set<Message> messagesCaused;
 
 	public BaseEntity() {

@@ -1,9 +1,16 @@
-package entity;
+package de.sb.messenger.persistence;
 
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+
+@Embeddable
 public class Address {
 
+	@Column(name = "street")
 	private String street;
+	@Column(name = "postcode")
 	private String postcode;
+	@Column(name = "city")
 	private String city;
 
 
