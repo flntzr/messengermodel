@@ -1,9 +1,6 @@
 package de.sb.messenger.persistence;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -11,8 +8,12 @@ import java.security.NoSuchAlgorithmException;
  * Created by Jakob Pfeiffer on 19.10.17.
  */
 @Entity
+@DiscriminatorValue("Document")
 @Table(name = "Document")
+@PrimaryKeyJoinColumn(name = "documentIdentity")
 public class Document extends BaseEntity {
+	@Id
+
 	@Column(name = "contentHash")
 	private byte[] contentHash;
 

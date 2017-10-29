@@ -8,9 +8,12 @@ import java.util.Set;
 
 
 @Entity
+@DiscriminatorValue("Person")
 @Table(name = "Person", schema = "messenger")
-@PrimaryKeyJoinColumn
+@PrimaryKeyJoinColumn(name = "personIdentity")
 public class Person extends BaseEntity {
+
+	@Id
 
 	@Column(name = "email")
 	private String mail;
@@ -18,8 +21,8 @@ public class Person extends BaseEntity {
 	@Column(name = "passwordHash")
 	private byte[] passwordHash;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "groupAlias")
-	@Enumerated
 	private Group group;
 
 	@Embedded
@@ -28,7 +31,7 @@ public class Person extends BaseEntity {
 	@Embedded
 	private Address address;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "avatarReference")
 	private Document avatar;
 
@@ -38,7 +41,7 @@ public class Person extends BaseEntity {
 	@ManyToMany(mappedBy = "peopleObserved")
 	private Set<Person> peopleObserving;
 
-	@ManyToMany(mappedBy = "peopleObserving")
+	@ManyToMany
 	private Set<Person> peopleObserved;
 
 	static public byte[] passwordHash(String password) {
