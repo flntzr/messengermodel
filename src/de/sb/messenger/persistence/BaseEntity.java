@@ -7,11 +7,12 @@ import java.util.Set;
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
-@Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn
 @Entity
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name="discriminator")
 @Table(name = "BaseEntity", schema = "messenger")
 public abstract class BaseEntity implements Comparable<BaseEntity> {
+
 	@Id
 	@GeneratedValue
 	private final long identity;
