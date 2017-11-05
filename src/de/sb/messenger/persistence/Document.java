@@ -1,6 +1,10 @@
 package de.sb.messenger.persistence;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -14,13 +18,20 @@ public class Document extends BaseEntity {
 	private static final byte[] EMPTY_CONTENT = new byte[0];
 	private static final byte[] EMPTY_CONTENT_HASH = mediaHash(EMPTY_CONTENT);
 
+	@NotNull
 	@Column(name = "contentHash")
+	@Size(min = 32, max = 32)
 	private byte[] contentHash;
 
+	@NotNull
 	@Column(name = "contentType")
+	@Size(min = 1, max = 63)
+	@Pattern(regexp = "[a-z]+/[a-z.+-]+")
 	private String contentType;
 
+	@NotNull
 	@Column(name = "content")
+	@Size(min = 1, max = 16777215)
 	private byte[] content;
 
 	public Document() {

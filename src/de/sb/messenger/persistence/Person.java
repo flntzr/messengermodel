@@ -1,11 +1,15 @@
 package de.sb.messenger.persistence;
 
 import javax.persistence.*;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 
 @Entity
 @Table(name = "Person", schema = "messenger")
@@ -15,21 +19,32 @@ public class Person extends BaseEntity {
 	private static final byte[] EMPTY_PASSWORD_HASH = Person.passwordHash("");
 
 	@Column(name = "email")
-	private String mail;
+	@NotNull
+	@Size(min = 1, max = 128)
+	@Pattern(regexp = ".+@.+")
+	private String email;
 
 	@Column(name = "passwordHash")
+	@NotNull
+	@Size(min = 32, max = 32)
 	private byte[] passwordHash;
 
 	@Enumerated(EnumType.STRING)
+	@NotNull
 	@Column(name = "groupAlias")
 	private Group group;
 
+	@NotNull
+	@Valid
 	@Embedded
 	private final Name name;
 
+	@NotNull
+	@Valid
 	@Embedded
 	private final Address address;
 
+	@NotNull
 	@ManyToOne
 	@JoinColumn(name = "avatarReference")
 	private Document avatar;
@@ -56,19 +71,19 @@ public class Person extends BaseEntity {
 		this.peopleObserving = Collections.emptySet();
 		this.peopleObserved = new HashSet<>();
 		this.avatar = avatar;
-		
+
 	}
-	
+
 	protected Person() {
 		this(null);
 	}
 
 	public String getMail() {
-		return mail;
+		return email;
 	}
 
 	public void setMail(String mail) {
-		this.mail = mail;
+		this.email = mail;
 	}
 
 	public byte[] getPasswordHash() {

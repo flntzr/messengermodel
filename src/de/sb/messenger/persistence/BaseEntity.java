@@ -14,7 +14,7 @@ import java.util.Set;
 public abstract class BaseEntity implements Comparable<BaseEntity> {
 
 	@Id
-	@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private final long identity;
 
 	@Column(name = "version")
