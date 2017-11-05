@@ -9,7 +9,7 @@ import java.util.Set;
  */
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name="discriminator")
+@DiscriminatorColumn(name = "discriminator", discriminatorType = DiscriminatorType.STRING)
 @Table(name = "BaseEntity", schema = "messenger")
 public abstract class BaseEntity implements Comparable<BaseEntity> {
 
@@ -52,12 +52,15 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	public Set<Message> getMessagesCaused() {
 		return messagesCaused;
 	}
+	
+	
+	@Override
+	public String toString() {
+		return this.getClass().getName() + "@" + this.getIdentity();
+	}
 
 	@Override
 	public int compareTo(BaseEntity o) {
-		if (this.identity == o.identity) {
-			return 0;
-		}
-		return this.identity < o.identity ? -1 : +1;
+		return Long.compare(this.identity, o.identity);
 	}
 }

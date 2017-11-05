@@ -8,12 +8,11 @@ import java.util.Set;
 
 
 @Entity
-@DiscriminatorValue("Person")
 @Table(name = "Person", schema = "messenger")
 @PrimaryKeyJoinColumn(name = "personIdentity")
 public class Person extends BaseEntity {
 
-	@Id
+	private static final byte[] EMPTY_PASSWORD_HASH = Person.passwordHash("");
 
 	@Column(name = "email")
 	private String mail;
@@ -26,36 +25,42 @@ public class Person extends BaseEntity {
 	private Group group;
 
 	@Embedded
-	private Name name;
+	private final Name name;
 
 	@Embedded
-	private Address address;
+	private final Address address;
 
-	@OneToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	@JoinColumn(name = "avatarReference")
 	private Document avatar;
 
 	@OneToMany(mappedBy = "author")
-	private Set<Message> messagesAuthored;
+	private final Set<Message> messagesAuthored;
 
 	@ManyToMany(mappedBy = "peopleObserved")
-	private Set<Person> peopleObserving;
+	private final Set<Person> peopleObserving;
 
 	@ManyToMany
-	private Set<Person> peopleObserved;
+	private final Set<Person> peopleObserved;
 
 	static public byte[] passwordHash(String password) {
 		return Document.mediaHash(password.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public Person() {
-		this.passwordHash = new byte[32];
+	public Person(Document avatar) {
+		this.passwordHash = Person.EMPTY_PASSWORD_HASH;
 		this.name = new Name();
 		this.address = new Address();
 		this.group = Group.USER;
 		this.messagesAuthored = Collections.emptySet();
 		this.peopleObserving = Collections.emptySet();
 		this.peopleObserved = new HashSet<>();
+		this.avatar = avatar;
+		
+	}
+	
+	protected Person() {
+		this(null);
 	}
 
 	public String getMail() {

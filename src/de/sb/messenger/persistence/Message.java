@@ -6,9 +6,9 @@ import javax.persistence.*;
  * Created by Jakob Pfeiffer on 19.10.17.
  */
 @Entity
-@Table(name = "Message")
+@Table(name = "Message", schema = "messenger")
+@PrimaryKeyJoinColumn(name = "messageIdentity")
 public class Message extends BaseEntity {
-
 
 	@ManyToOne
 	@JoinColumn(name = "authorReference")

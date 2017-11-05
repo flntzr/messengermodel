@@ -8,11 +8,11 @@ import java.security.NoSuchAlgorithmException;
  * Created by Jakob Pfeiffer on 19.10.17.
  */
 @Entity
-@DiscriminatorValue("Document")
-@Table(name = "Document")
+@Table(name = "Document", schema = "messenger")
 @PrimaryKeyJoinColumn(name = "documentIdentity")
 public class Document extends BaseEntity {
-	@Id
+	private static final byte[] EMPTY_CONTENT = new byte[0];
+	private static final byte[] EMPTY_CONTENT_HASH = mediaHash(EMPTY_CONTENT);
 
 	@Column(name = "contentHash")
 	private byte[] contentHash;
@@ -23,11 +23,9 @@ public class Document extends BaseEntity {
 	@Column(name = "content")
 	private byte[] content;
 
-	private static final byte[] EMPTY_CONTENT_HASH = Document.mediaHash(new byte[0]);
-
 	public Document() {
-		this.content = new byte[0];
-		this.contentHash = Document.EMPTY_CONTENT_HASH;
+		this.content = EMPTY_CONTENT;
+		this.contentHash = EMPTY_CONTENT_HASH;
 	}
 
 	public byte[] getContentHash() {
@@ -47,19 +45,16 @@ public class Document extends BaseEntity {
 	}
 
 	public void setContent(byte[] content) {
-		this.contentHash = Document.mediaHash(content);
+		this.contentHash = mediaHash(content);
 		this.content = content;
 	}
 
 	static public byte[] mediaHash(byte[] content) {
-		MessageDigest messageDigest;
-		byte[] hash = null;
 		try {
-			messageDigest = MessageDigest.getInstance("SHA-256");
-			hash = messageDigest.digest(content);
+			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			return messageDigest.digest(content);
 		} catch (NoSuchAlgorithmException e) {
 			throw new AssertionError(e);
 		}
-		return hash;
 	}
 }
