@@ -59,6 +59,12 @@ public class Person extends BaseEntity {
 
 	@NotNull
 	@ManyToMany
+	@JoinTable
+	(
+		name = "ObservationAssociation",
+		joinColumns = @JoinColumn(name="observingReference"),
+		inverseJoinColumns = @JoinColumn(name="observedReference")
+	)
 	private final Set<Person> peopleObserved;
 
 	static public byte[] passwordHash(String password) {
