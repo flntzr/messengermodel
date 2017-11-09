@@ -2,6 +2,7 @@ package de.sb.messenger.persistence;
 
 import javax.persistence.*;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -29,7 +30,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	public BaseEntity() {
 		this.identity = 0;
 		this.version = 1;
-		this.messagesCaused = Collections.emptySet();
+		this.messagesCaused = new HashSet<>();
 		this.creationTimestamp = System.currentTimeMillis();
 	}
 
@@ -52,8 +53,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	public Set<Message> getMessagesCaused() {
 		return messagesCaused;
 	}
-	
-	
+
 	@Override
 	public String toString() {
 		return this.getClass().getName() + "@" + this.getIdentity();
