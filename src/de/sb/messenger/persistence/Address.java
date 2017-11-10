@@ -45,4 +45,17 @@ public class Address {
 		this.city = city;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if(obj.getClass() == Address.class){
+
+			Address other = (Address) obj;
+			return this.getStreet().equalsIgnoreCase(other.getStreet())
+					&& this.getPostcode().equalsIgnoreCase(other.getPostcode())
+					&& this.getCity().equalsIgnoreCase(other.getCity());
+
+		} else {
+			return false;
+		}
+	}
 }

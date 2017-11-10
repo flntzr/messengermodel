@@ -51,4 +51,19 @@ public class Message extends BaseEntity {
 	public void setBody(String body) {
 		this.body = body;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(obj.getClass() == Message.class){
+
+			Message other = (Message) obj;
+			return  this.getIdentity() == other.getIdentity()
+					&& this.getAuthor().equals(other.getAuthor())
+					&& this.getSubject().equals(other.getSubject())
+					&& this.getBody().equalsIgnoreCase(other.getBody());
+
+		} else {
+			return false;
+		}
+	}
 }

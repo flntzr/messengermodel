@@ -68,4 +68,19 @@ public class Document extends BaseEntity {
 			throw new AssertionError(e);
 		}
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(obj.getClass() == Document.class) {
+
+			Document other = (Document) obj;
+			return  this.getIdentity() == other.getIdentity()
+					&& this.getContentType().equalsIgnoreCase(other.getContentType())
+					&& this.getContent() == other.getContent()
+					&& this.getContentHash() == other.getContentHash();
+
+		} else {
+			return false;
+		}
+	}
 }
