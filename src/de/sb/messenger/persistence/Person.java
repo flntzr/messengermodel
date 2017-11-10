@@ -143,8 +143,7 @@ public class Person extends BaseEntity {
 	public boolean equals(Object obj) {
 		if(obj.getClass() == Person.class){
 			Person other = (Person) obj;
-			return  this.getIdentity() == other.getIdentity()
-					&&this.getName().equals(other.getName())
+			return  this.getName().equals(other.getName())
 					&& this.getAddress().equals(other.getAddress())
 					&& this.getMail().equals(other.getMail())
 					&& this.getMessagesAuthored().equals(other.getMessagesAuthored())
