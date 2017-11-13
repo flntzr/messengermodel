@@ -7,6 +7,7 @@ import javax.validation.constraints.Size;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
@@ -74,10 +75,9 @@ public class Document extends BaseEntity {
 		if(obj.getClass() == Document.class) {
 
 			Document other = (Document) obj;
-			return  this.getIdentity() == other.getIdentity()
-					&& this.getContentType().equalsIgnoreCase(other.getContentType())
-					&& this.getContent() == other.getContent()
-					&& this.getContentHash() == other.getContentHash();
+			return  this.getContentType().equalsIgnoreCase(other.getContentType())
+					&& Arrays.equals(this.getContent(), other.getContent())
+					&& Arrays.equals(this.getContentHash(), other.getContentHash());
 
 		} else {
 			return false;

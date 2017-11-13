@@ -3,6 +3,7 @@ package de.sb.messenger.persistence;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.Objects;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
@@ -54,13 +55,13 @@ public class Message extends BaseEntity {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj.getClass() == Message.class){
+		if(obj.getClass() == Message.class) {
 
 			Message other = (Message) obj;
-			return  this.getIdentity() == other.getIdentity()
-					&& this.getAuthor().equals(other.getAuthor())
-					&& this.getSubject().equals(other.getSubject())
-					&& this.getBody().equalsIgnoreCase(other.getBody());
+			boolean sameAuthor = Objects.equals(this.getAuthor(), other.getAuthor());
+			boolean sameSubject = Objects.equals(this.getSubject(), other.getSubject());
+			boolean sameBody = Objects.equals(this.getBody(), other.getBody());
+			return sameAuthor && sameSubject && sameBody;
 
 		} else {
 			return false;
