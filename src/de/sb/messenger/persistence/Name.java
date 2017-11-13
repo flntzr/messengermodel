@@ -37,4 +37,17 @@ public class Name {
 		this.family = family;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if(obj.getClass() == Name.class){
+			Name other = (Name) obj;
+
+			return this.getGiven().equalsIgnoreCase(other.getGiven())
+					&& this.getFamily().equalsIgnoreCase(other.getFamily());
+
+		} else {
+			return false;
+		}
+	}
+
 }

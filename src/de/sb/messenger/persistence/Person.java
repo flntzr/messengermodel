@@ -7,8 +7,8 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -139,4 +139,22 @@ public class Person extends BaseEntity {
 		return peopleObserved;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if(obj.getClass() == Person.class){
+			Person other = (Person) obj;
+			return  Objects.equals(this.getName(), other.getName())
+					&& Objects.equals(this.getAddress(),other.getAddress())
+					&& Objects.equals(this.getMail(), other.getMail())
+					&& Objects.equals(this.getAvatar(), other.getAvatar())
+					&& this.getMessagesAuthored().size() == other.getMessagesAuthored().size()
+					//&& this.getMessagesAuthored().containsAll(other.getMessagesAuthored())
+					&& this.getPeopleObserving().size() == other.getPeopleObserving().size()
+					//&& this.getPeopleObserving().containsAll(other.getPeopleObserving())
+					&& this.getPeopleObserved().size() == other.getPeopleObserved().size();
+					//&& this.getPeopleObserved().containsAll(other.getPeopleObserved());
+		} else {
+			return false;
+		}
+	}
 }

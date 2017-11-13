@@ -7,6 +7,7 @@ import javax.validation.constraints.Size;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
@@ -66,6 +67,20 @@ public class Document extends BaseEntity {
 			return messageDigest.digest(content);
 		} catch (NoSuchAlgorithmException e) {
 			throw new AssertionError(e);
+		}
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(obj.getClass() == Document.class) {
+
+			Document other = (Document) obj;
+			return  this.getContentType().equalsIgnoreCase(other.getContentType())
+					&& Arrays.equals(this.getContent(), other.getContent())
+					&& Arrays.equals(this.getContentHash(), other.getContentHash());
+
+		} else {
+			return false;
 		}
 	}
 }
