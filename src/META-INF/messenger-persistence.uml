@@ -1,0 +1,19 @@
+// UML entity-relationship diagram for messenger-model
+// Render using http://yuml.me/diagram/plain/class/draw
+[Comparable| +compareTo(:T):int; ]
+[Group| _ADMIN:Group; _USER:Group; | ]
+[BaseEntity| -identity:long; -version:int; -creationTimestamp:long; -messagesCaused:Message 0..*; | ...]
+[BaseEntity]-.-^[Comparable]
+
+[Document| -contentHash:byte 32..32; -contentType:char 1..63; -content:byte 1..16777215; | _+mediaHash(content:byte 0..*):byte 32..32; ...]-^[BaseEntity]
+[Person| -email:char 1..128; -passwordHash:byte 32..32; -group:Group; -name:Name; -address:Address; -avatar:Document; -messagesAuthored:Message 0..*; -peopleObserving:Person 0..*; -peopleObserved:Person 0..*; | _+passwordHash(password:String):byte 32..32; ...]-^[BaseEntity]
+[Message| -author:Person; -subject:BaseEntity; -body:char 1..4093; | ...]-^[BaseEntity]
+
+[Person]++-name>[Name| -given:char 1..31; -family:char 1..31; | ...]
+[Person]++-address>[Address| -street:char 0..63; -postcode:char 0..15; -city:char 1..63; | ...]
+[Person]+-group>[Group]
+
+[Person]0..* - avatar 1>[Document]
+[Person]<peopleObserving 0..* - peopleObserved 0..*>[Person]
+[Person]<author 1 - messagesAuthored 0..*>[Message]
+[BaseEntity]<subject 1 - messagesCaused 0..*>[Message]
