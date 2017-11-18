@@ -5,12 +5,15 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+@XmlRootElement(name="person")
 @Entity
 @Table(name = "Person", schema = "messenger")
 @PrimaryKeyJoinColumn(name = "personIdentity")
@@ -18,6 +21,7 @@ public class Person extends BaseEntity {
 
 	private static final byte[] EMPTY_PASSWORD_HASH = Person.passwordHash("");
 
+	@XmlElement
 	@Column(name = "email")
 	@NotNull
 	@Size(min = 1, max = 128)
@@ -29,6 +33,7 @@ public class Person extends BaseEntity {
 	@Size(min = 32, max = 32)
 	private byte[] passwordHash;
 
+	@XmlElement
 	@Enumerated(EnumType.STRING)
 	@NotNull
 	@Column(name = "groupAlias")
@@ -111,10 +116,12 @@ public class Person extends BaseEntity {
 		this.group = group;
 	}
 
+	@XmlElement(name ="name")
 	public Name getName() {
 		return name;
 	}
 
+	@XmlElement(name = "address")
 	public Address getAddress() {
 		return address;
 	}

@@ -4,6 +4,8 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -12,6 +14,7 @@ import java.util.Arrays;
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
+@XmlRootElement(name = "avatar")
 @Entity
 @Table(name = "Document", schema = "messenger")
 @PrimaryKeyJoinColumn(name = "documentIdentity")
@@ -19,11 +22,13 @@ public class Document extends BaseEntity {
 	private static final byte[] EMPTY_CONTENT = new byte[0];
 	private static final byte[] EMPTY_CONTENT_HASH = mediaHash(EMPTY_CONTENT);
 
+	@XmlElement
 	@NotNull
 	@Column(name = "contentHash")
 	@Size(min = 32, max = 32)
 	private byte[] contentHash;
 
+	@XmlElement
 	@NotNull
 	@Column(name = "contentType")
 	@Size(min = 1, max = 63)
