@@ -18,13 +18,14 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private final long identity;
 
-	@Column(name = "version")
+	//@Version -> search in wiki: optimistic locking
+	@Column(nullable = false, updatable = false)
 	private int version;
 
-	@Column(name = "creationTimestamp")
+	@Column(nullable = false, updatable = false)
 	private final long creationTimestamp;
 
-	@OneToMany(mappedBy = "subject")
+	@OneToMany(mappedBy = "subject", cascade = CascadeType.REMOVE)
 	private final Set<Message> messagesCaused;
 
 	public BaseEntity() {

@@ -56,6 +56,7 @@ public class EntityService {
 	@Path("{identity}")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public BaseEntity queryIdentity (@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
+		System.out.println(identity);
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");

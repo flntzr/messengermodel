@@ -13,19 +13,21 @@ import java.util.Objects;
 @PrimaryKeyJoinColumn(name = "messageIdentity")
 public class Message extends BaseEntity {
 
+
+
 	@NotNull
-	@ManyToOne
-	@JoinColumn(name = "authorReference")
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "authorReference", nullable = false, updatable = false)
 	private Person author;
 
 	@NotNull
-	@ManyToOne
-	@JoinColumn(name = "subjectReference")
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "subjectReference", nullable = false, updatable = false)
 	private BaseEntity subject;
 
 	@NotNull
 	@Size(min = 1, max = 4093)
-	@Column(name = "body")
+	@Column(name = "body", nullable = false)
 	private String body;
 
 	public Message(Person author, BaseEntity subject) {

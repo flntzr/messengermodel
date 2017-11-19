@@ -19,19 +19,20 @@ public class Document extends BaseEntity {
 	private static final byte[] EMPTY_CONTENT = new byte[0];
 	private static final byte[] EMPTY_CONTENT_HASH = mediaHash(EMPTY_CONTENT);
 
+
 	@NotNull
-	@Column(name = "contentHash")
+	@Column(nullable = false)
 	@Size(min = 32, max = 32)
 	private byte[] contentHash;
 
 	@NotNull
-	@Column(name = "contentType")
+	@Column(nullable = false)
 	@Size(min = 1, max = 63)
-	@Pattern(regexp = "[a-z]+/[a-z.+-]+")
+	@Pattern(regexp = "^[a-z]+/[a-z.+-]+$")
 	private String contentType;
 
 	@NotNull
-	@Column(name = "content")
+	@Column(nullable = false)
 	@Size(min = 1, max = 16777215)
 	private byte[] content;
 

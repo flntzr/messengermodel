@@ -1,5 +1,7 @@
 package de.sb.messenger.persistence;
 
+import org.eclipse.persistence.annotations.CacheIndex;
+
 import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -18,20 +20,22 @@ public class Person extends BaseEntity {
 
 	private static final byte[] EMPTY_PASSWORD_HASH = Person.passwordHash("");
 
-	@Column(name = "email")
+
+	@Column(nullable = false)
 	@NotNull
 	@Size(min = 1, max = 128)
-	@Pattern(regexp = ".+@.+")
+	@Pattern(regexp = "^.+@.+$")
+	@CacheIndex(updateable = true)
 	private String email;
 
-	@Column(name = "passwordHash")
+	@Column(nullable = false)
 	@NotNull
 	@Size(min = 32, max = 32)
 	private byte[] passwordHash;
 
 	@Enumerated(EnumType.STRING)
 	@NotNull
-	@Column(name = "groupAlias")
+	@Column(name = "groupAlias", nullable = false)
 	private Group group;
 
 	@NotNull
@@ -45,12 +49,12 @@ public class Person extends BaseEntity {
 	private final Address address;
 
 	@NotNull
-	@ManyToOne
-	@JoinColumn(name = "avatarReference")
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "avatarReference", nullable = false)
 	private Document avatar;
 
 	@NotNull
-	@OneToMany(mappedBy = "author")
+	@OneToMany(mappedBy = "author", cascade = CascadeType.REMOVE)
 	private final Set<Message> messagesAuthored;
 
 	@NotNull
@@ -61,9 +65,10 @@ public class Person extends BaseEntity {
 	@ManyToMany
 	@JoinTable
 	(
+		schema = "messenger",
 		name = "ObservationAssociation",
-		joinColumns = @JoinColumn(name="observingReference"),
-		inverseJoinColumns = @JoinColumn(name="observedReference")
+		joinColumns = @JoinColumn(name="observingReference", nullable = false),
+		inverseJoinColumns = @JoinColumn(name="observedReference", nullable = false)
 	)
 	private final Set<Person> peopleObserved;
 

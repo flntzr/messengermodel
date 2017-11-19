@@ -8,14 +8,16 @@ import javax.validation.constraints.Size;
 @Embeddable
 public class Name {
 
+	// nullable & updateable bei allen column & joincolumns hinzufügen
+
 	@NotNull
 	@Size(min = 1, max = 31)
-	@Column(name = "givenName")
+	@Column(name = "givenName", nullable = false)
 	private String given;
 
 	@NotNull
 	@Size(min = 1, max = 31)
-	@Column(name = "familyName")
+	@Column(name = "familyName", nullable = false)
 	private String family;
 
 	public Name() {
