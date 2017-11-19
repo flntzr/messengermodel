@@ -1,8 +1,23 @@
 package de.sb.messenger.persistence;
 
-import org.eclipse.persistence.annotations.CacheIndex;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.Table;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
@@ -10,10 +25,7 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import org.eclipse.persistence.annotations.CacheIndex;
 
 @XmlRootElement(name = "person")
 @Entity

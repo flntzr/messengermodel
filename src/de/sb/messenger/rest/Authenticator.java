@@ -4,6 +4,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.NotAuthorizedException;
+
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.HttpCredentials;
 import de.sb.toolbox.net.RestJpaLifecycleProvider;

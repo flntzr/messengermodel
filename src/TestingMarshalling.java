@@ -1,11 +1,8 @@
-import de.sb.messenger.persistence.BaseEntity;
-import de.sb.messenger.persistence.Document;
-import de.sb.messenger.persistence.Message;
-import de.sb.messenger.persistence.Person;
-
-import javax.mail.MessageAware;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
+
+import de.sb.messenger.persistence.Document;
+import de.sb.messenger.persistence.Person;
 
 public class TestingMarshalling {
 
