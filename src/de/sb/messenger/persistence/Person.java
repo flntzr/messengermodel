@@ -7,12 +7,15 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+@XmlRootElement(name = "person")
 @Entity
 @Table(name = "Person", schema = "messenger")
 @PrimaryKeyJoinColumn(name = "personIdentity")
@@ -20,8 +23,9 @@ public class Person extends BaseEntity {
 
 	private static final byte[] EMPTY_PASSWORD_HASH = Person.passwordHash("");
 
-
-	@Column(nullable = false)
+	
+	@XmlElement
+	@Column(name = "email", nullable = false)
 	@NotNull
 	@Size(min = 1, max = 128)
 	@Pattern(regexp = "^.+@.+$")
@@ -33,6 +37,7 @@ public class Person extends BaseEntity {
 	@Size(min = 32, max = 32)
 	private byte[] passwordHash;
 
+	@XmlElement
 	@Enumerated(EnumType.STRING)
 	@NotNull
 	@Column(name = "groupAlias", nullable = false)
@@ -63,13 +68,7 @@ public class Person extends BaseEntity {
 
 	@NotNull
 	@ManyToMany
-	@JoinTable
-	(
-		schema = "messenger",
-		name = "ObservationAssociation",
-		joinColumns = @JoinColumn(name="observingReference", nullable = false),
-		inverseJoinColumns = @JoinColumn(name="observedReference", nullable = false)
-	)
+	@JoinTable(schema = "messenger", name = "ObservationAssociation", joinColumns = @JoinColumn(name = "observingReference", nullable = false), inverseJoinColumns = @JoinColumn(name = "observedReference", nullable = false))
 	private final Set<Person> peopleObserved;
 
 	static public byte[] passwordHash(String password) {
@@ -116,10 +115,12 @@ public class Person extends BaseEntity {
 		this.group = group;
 	}
 
+	@XmlElement(name = "name")
 	public Name getName() {
 		return name;
 	}
 
+	@XmlElement(name = "address")
 	public Address getAddress() {
 		return address;
 	}
@@ -146,18 +147,18 @@ public class Person extends BaseEntity {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj.getClass() == Person.class){
+		if (obj.getClass() == Person.class) {
 			Person other = (Person) obj;
-			return  Objects.equals(this.getName(), other.getName())
-					&& Objects.equals(this.getAddress(),other.getAddress())
+			return Objects.equals(this.getName(), other.getName())
+					&& Objects.equals(this.getAddress(), other.getAddress())
 					&& Objects.equals(this.getMail(), other.getMail())
 					&& Objects.equals(this.getAvatar(), other.getAvatar())
 					&& this.getMessagesAuthored().size() == other.getMessagesAuthored().size()
-					//&& this.getMessagesAuthored().containsAll(other.getMessagesAuthored())
+					// && this.getMessagesAuthored().containsAll(other.getMessagesAuthored())
 					&& this.getPeopleObserving().size() == other.getPeopleObserving().size()
-					//&& this.getPeopleObserving().containsAll(other.getPeopleObserving())
+					// && this.getPeopleObserving().containsAll(other.getPeopleObserving())
 					&& this.getPeopleObserved().size() == other.getPeopleObserved().size();
-					//&& this.getPeopleObserved().containsAll(other.getPeopleObserved());
+			// && this.getPeopleObserved().containsAll(other.getPeopleObserved());
 		} else {
 			return false;
 		}

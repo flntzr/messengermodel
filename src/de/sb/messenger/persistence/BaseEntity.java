@@ -1,6 +1,7 @@
 package de.sb.messenger.persistence;
 
 import javax.persistence.*;
+import javax.xml.bind.annotation.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -8,6 +9,9 @@ import java.util.Set;
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
+@XmlAccessorType(XmlAccessType.NONE)
+@XmlType
+@XmlSeeAlso({Document.class, Message.class, Person.class})
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "discriminator", discriminatorType = DiscriminatorType.STRING)
@@ -35,6 +39,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 		this.creationTimestamp = System.currentTimeMillis();
 	}
 
+	@XmlElement(name = "identity")
 	public long getIdentity() {
 		return identity;
 	}
@@ -47,10 +52,12 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 		this.version = version;
 	}
 
+	@XmlElement(name = "creationTimestamp")
 	public long getCreationTimestamp() {
 		return creationTimestamp;
 	}
 
+	@XmlElement
 	public Set<Message> getMessagesCaused() {
 		return messagesCaused;
 	}
