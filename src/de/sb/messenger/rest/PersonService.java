@@ -44,7 +44,6 @@ public class PersonService {
 //				+ "(:familyName is null or p.family = :familyName) and"
 //				+ "(:mail is null or p.mail = :mail)", Person.class);
 		List<Person> results = query.getResultList();
-		Person person = new Person(null);
 		if (results.isEmpty()) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
