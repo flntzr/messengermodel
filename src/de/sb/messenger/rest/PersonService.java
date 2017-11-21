@@ -50,6 +50,20 @@ public class PersonService {
 		if (results.isEmpty()) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
+		
+		results.sort((person1, person2) -> {
+			// 1. sort by family name
+			int result = person1.getName().getFamily().compareTo(person2.getName().getFamily());
+			// 2. sort by given name
+			if (result == 0) {
+				result = person1.getName().getGiven().compareTo(person2.getName().getGiven());
+			}
+			// 3. sort by email
+			if (result == 0) {
+				result = person1.getMail().compareTo(person2.getMail());
+			}
+			return result;
+		});
 		return results;
 	}
 
