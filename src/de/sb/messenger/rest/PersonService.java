@@ -7,12 +7,14 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
@@ -52,6 +54,19 @@ public class PersonService {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 		return results;
+	}
+	
+	@GET
+	@Path("{identity}")
+	@Produces({ APPLICATION_JSON, APPLICATION_XML })
+	public Person queryPerson(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
+		System.err.println("identity: " +identity);
+		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		Person person = messengerManager.find(Person.class, identity);
+		if (person == null) {
+			throw new ClientErrorException(NOT_FOUND);
+		}
+		return person;
 	}
 
 }
