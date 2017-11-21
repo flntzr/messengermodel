@@ -2,9 +2,13 @@ package de.sb.messenger.rest;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.APPLICATION_XML;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
@@ -20,6 +24,7 @@ import javax.ws.rs.QueryParam;
 
 import de.sb.messenger.persistence.Group;
 import de.sb.messenger.persistence.Person;
+import de.sb.toolbox.net.RestCredentials;
 
 @Path("people")
 public class PersonService {
@@ -68,5 +73,45 @@ public class PersonService {
 		}
 		return person;
 	}
+
+	@GET
+	@Path("{identity}/peopleObserving")
+	@Produces({ APPLICATION_JSON, APPLICATION_XML })
+	public List<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
+		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		Person person = messengerManager.find(Person.class, identity);
+
+		if (person == null) {
+			throw new ClientErrorException(NOT_FOUND);
+		}
+
+		List<Person> peopleObserving = new ArrayList<>(person.getPeopleObserving());
+		// TODO sort this list
+
+		return peopleObserving;
+
+	}
+
+	@GET
+	@Path("{identity}/peopleObserved")
+	@Produces({ APPLICATION_JSON, APPLICATION_XML })
+	public List<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
+		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		Person person = messengerManager.find(Person.class, identity);
+
+		if (person == null) {
+			throw new ClientErrorException(NOT_FOUND);
+		}
+		List<Person> peopleObserved = new ArrayList<>(person.getPeopleObserved());
+
+		// TODO sort this list
+
+		return peopleObserved;
+	}
+
 
 }
