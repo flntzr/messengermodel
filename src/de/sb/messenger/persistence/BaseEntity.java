@@ -72,7 +72,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 		return creationTimestamp;
 	}
 
-	@XmlElement
+	//@XmlElement -> Relationsfeld
 	public Set<Message> getMessagesCaused() {
 		return messagesCaused;
 	}

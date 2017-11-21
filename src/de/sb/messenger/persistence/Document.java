@@ -39,6 +39,7 @@ public class Document extends BaseEntity {
 	@Pattern(regexp = "^[a-z]+/[a-z.+-]+$")
 	private String contentType;
 
+	@XmlElement
 	@NotNull
 	@Column(nullable = false)
 	@Size(min = 1, max = 16777215)
