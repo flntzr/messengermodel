@@ -96,7 +96,6 @@ public class Person extends BaseEntity {
 		this.peopleObserving = new HashSet<>();
 		this.peopleObserved = new HashSet<>();
 		this.avatar = avatar;
-
 	}
 
 	protected Person() {
