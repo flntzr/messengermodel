@@ -1,6 +1,7 @@
 package de.sb.messenger.rest;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Persistence;
 import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.NotAuthorizedException;
@@ -8,6 +9,8 @@ import javax.ws.rs.NotAuthorizedException;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.HttpCredentials;
 import de.sb.toolbox.net.RestJpaLifecycleProvider;
+
+import java.util.List;
 
 
 /**
@@ -30,10 +33,10 @@ public interface Authenticator {
 	 */
 	@SuppressWarnings("unused")
 	static public Person authenticate(final HttpCredentials.Basic credentials) throws NotAuthorizedException, PersistenceException, IllegalStateException, NullPointerException {
-		final String pql = "select p from Person as p where p.email = :email and p.passwordHash = :passwordHash";
-		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
+		final String pql = "select p.identity from Person as p where p.email = :email and p.passwordHash = :passwordHash";
+		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 
-		// TODO: Add JPA authentication by calculating the password hash from the given password,
+		// Add JPA authentication by calculating the password hash from the given password,
 		// creating a query using the constant above, and returning the person if it matches the
 		// password hash. If there is none, or if it fails the password hash check, then throw
 		// NotAuthorizedException("Basic"). Note that this exception type is a specialized Subclass
