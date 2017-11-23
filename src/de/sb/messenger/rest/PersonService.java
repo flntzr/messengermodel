@@ -10,6 +10,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.Consumes;
@@ -80,14 +81,12 @@ public class PersonService {
 		Person newPerson;
 		final boolean insert = person.getIdentity() == 0;
 		messengerManager.getTransaction().begin();
-		System.out.println("INSERT: " + insert);
 		if (insert) {
 			Document avatar = messengerManager.find(Document.class, 1L);
 			newPerson = new Person(avatar);
 		} else {
 			newPerson = messengerManager.find(Person.class, person.getIdentity());
 		}
-		System.out.println("Sent: " + person.getMail());
 		newPerson.setMail(person.getMail());
 		newPerson.setGroup(person.getGroup());
 		newPerson.getAddress().setCity(person.getAddress().getCity());
@@ -95,19 +94,13 @@ public class PersonService {
 		newPerson.getAddress().setStreet(person.getAddress().getStreet());
 		newPerson.getName().setFamily(person.getName().getFamily());
 		newPerson.getName().setGiven(person.getName().getGiven());
-		System.out.println("Created: " + person.getMail());
 		
-		try {
-			if (insert) {
-				messengerManager.persist(newPerson);
-			} else {
-				messengerManager.flush();				
-			}
-			messengerManager.getTransaction().commit();
-		} catch(RuntimeException e) {
-			e.printStackTrace();
+		if (insert) {
+			messengerManager.persist(newPerson);
+		} else {
+			messengerManager.flush();				
 		}
-		
+		messengerManager.getTransaction().commit();
 		return newPerson.getIdentity();
 	}
 
