@@ -37,7 +37,7 @@ public class Person extends BaseEntity {
 
 	
 	@XmlElement
-	@Column(name = "email", nullable = false)
+	@Column(nullable = false)
 	@NotNull
 	@Size(min = 1, max = 128)
 	@Pattern(regexp = "^.+@.+$")
@@ -58,11 +58,13 @@ public class Person extends BaseEntity {
 	@NotNull
 	@Valid
 	@Embedded
+	@XmlElement
 	private final Name name;
 
 	@NotNull
 	@Valid
 	@Embedded
+	@XmlElement
 	private final Address address;
 
 	@NotNull
@@ -126,12 +128,10 @@ public class Person extends BaseEntity {
 		this.group = group;
 	}
 
-	@XmlElement(name = "name")
 	public Name getName() {
 		return name;
 	}
 
-	@XmlElement(name = "address")
 	public Address getAddress() {
 		return address;
 	}

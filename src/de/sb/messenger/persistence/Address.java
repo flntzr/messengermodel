@@ -4,19 +4,25 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlElement;
 
 @Embeddable
 public class Address {
 
 	@Size(max = 63)
 	@Column(nullable = false)
+	@XmlElement
 	private String street;
+
 	@Size(max = 15)
 	@Column(nullable = false)
+	@XmlElement
 	private String postcode;
+
 	@NotNull
 	@Size(min = 1, max = 63)
 	@Column(nullable = false)
+	@XmlElement
 	private String city;
 
 	public Address() {
