@@ -41,15 +41,34 @@ public class Name {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj.getClass() == Name.class){
-			Name other = (Name) obj;
-
-			return this.getGiven().equalsIgnoreCase(other.getGiven())
-					&& this.getFamily().equalsIgnoreCase(other.getFamily());
-
-		} else {
+		if (obj.getClass() != Name.class) {
 			return false;
 		}
+		Name other = (Name) obj;
+
+		boolean isGivenEqual = false;
+		boolean isFamilyEqual = false;
+		
+		if (this.getGiven() == null && other.getGiven() == null) {
+			isGivenEqual = true;
+		} else if (this.getGiven() == null || other.getGiven() == null) {
+			return false;
+		}
+		if (this.getFamily() == null && other.getFamily() == null) {
+			isFamilyEqual = true;
+		} else if (this.getFamily() == null || other.getFamily() == null) {
+			return false;
+		}
+		
+		if (!isGivenEqual) {
+			isGivenEqual = this.getGiven().equalsIgnoreCase(other.getGiven());
+		}
+		
+		if (!isFamilyEqual) {
+			isFamilyEqual = this.getFamily().equalsIgnoreCase(other.getFamily());
+		}
+		
+		return isGivenEqual && isFamilyEqual;
 	}
 
 }

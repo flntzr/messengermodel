@@ -8,7 +8,6 @@ import javax.validation.constraints.Size;
 @Embeddable
 public class Address {
 
-
 	@Size(max = 63)
 	@Column(nullable = false)
 	private String street;
@@ -49,15 +48,41 @@ public class Address {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(obj.getClass() == Address.class){
+		boolean isStreetEqual = false;
+		boolean isCityEqual = false;
+		boolean isPostcodeEqual = false;
 
-			Address other = (Address) obj;
-			return this.getStreet().equalsIgnoreCase(other.getStreet())
-					&& this.getPostcode().equalsIgnoreCase(other.getPostcode())
-					&& this.getCity().equalsIgnoreCase(other.getCity());
-
-		} else {
+		if (obj.getClass() != Address.class) {
 			return false;
 		}
+		Address other = (Address) obj;
+
+		if (this.getStreet() == null && other.getStreet() == null) {
+			isStreetEqual = true;
+		} else if (this.getStreet() == null || other.getStreet() == null) {
+			return false;
+		}
+		if (this.getCity() == null && other.getCity() == null) {
+			isCityEqual = true;
+		} else if (this.getCity() == null || other.getCity() == null) {
+			return false;
+		}
+		if (this.getPostcode() == null && other.getPostcode() == null) {
+			isPostcodeEqual = true;
+		} else if (this.getPostcode() == null || other.getPostcode() == null) {
+			return false;
+		}
+
+		if (!isStreetEqual) {
+			isStreetEqual = this.getStreet().equalsIgnoreCase(other.getStreet());
+		}
+		if (!isCityEqual) {
+			isCityEqual = this.getCity().equalsIgnoreCase(other.getCity());
+		}
+		if (!isPostcodeEqual) {
+			isPostcodeEqual = this.getPostcode().equalsIgnoreCase(other.getPostcode());
+		}
+
+		return isStreetEqual && isCityEqual && isPostcodeEqual;
 	}
 }
