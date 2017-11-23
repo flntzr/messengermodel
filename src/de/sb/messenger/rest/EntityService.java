@@ -27,7 +27,6 @@ import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.Copyright;
 import de.sb.toolbox.net.RestCredentials;
-import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
 
 /**

@@ -8,9 +8,6 @@ import javax.ws.rs.NotAuthorizedException;
 
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.HttpCredentials;
-import de.sb.toolbox.net.RestJpaLifecycleProvider;
-
-import java.util.List;
 
 
 /**
