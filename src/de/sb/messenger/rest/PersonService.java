@@ -17,11 +17,13 @@ import javax.persistence.TypedQuery;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+import de.sb.messenger.persistence.Document;
 import de.sb.messenger.persistence.Group;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
@@ -65,13 +67,38 @@ public class PersonService {
 	@Path("{identity}")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public Person queryPerson(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
-		System.err.println("identity: " +identity);
 		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 		Person person = messengerManager.find(Person.class, identity);
 		if (person == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 		return person;
+	}
+	
+	@PUT
+	@Produces({ APPLICATION_JSON, APPLICATION_XML })
+	public long createPerson(final Person person) {
+		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		Person newPerson;
+		if (person.getIdentity() == 0) {
+			Document avatar = messengerManager.find(Document.class, 1L);
+			 newPerson = new Person(avatar);
+		} else {
+			newPerson = messengerManager.find(Person.class, person.getIdentity());
+		}
+		newPerson.setMail(person.getMail());
+		newPerson.setGroup(person.getGroup());
+		newPerson.getAddress().setCity(person.getAddress().getCity());
+		newPerson.getAddress().setPostcode(person.getAddress().getPostcode());
+		newPerson.getAddress().setStreet(person.getAddress().getStreet());
+		newPerson.getName().setFamily(person.getName().getFamily());
+		newPerson.getName().setGiven(person.getName().getGiven());
+		
+		messengerManager.getTransaction().begin();
+		messengerManager.merge(newPerson);
+		messengerManager.getTransaction().commit();
+		
+		return newPerson.getIdentity();
 	}
 
 	@GET
