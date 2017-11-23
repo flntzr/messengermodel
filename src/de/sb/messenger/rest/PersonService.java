@@ -14,7 +14,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
@@ -22,6 +25,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.client.Entity;
 
 import de.sb.messenger.persistence.Document;
 import de.sb.messenger.persistence.Group;
@@ -30,6 +34,8 @@ import de.sb.toolbox.net.RestCredentials;
 
 @Path("people")
 public class PersonService {
+	
+	private static final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
@@ -37,7 +43,6 @@ public class PersonService {
 		@QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
 		@QueryParam("mail") final String mail, @QueryParam("street") final String street,
 		@QueryParam("postcode") final String postcode, @QueryParam("city") final String city, @QueryParam("group") final Group group) {
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 		TypedQuery<Person> query = messengerManager.createQuery("SELECT p FROM Person p WHERE "
 				+ "(:givenName is null OR p.name.given = :givenName) AND "
 				+ "(:familyName is null or p.name.family = :familyName) AND " 
@@ -76,16 +81,19 @@ public class PersonService {
 	}
 	
 	@PUT
-	@Produces({ APPLICATION_JSON, APPLICATION_XML })
-	public long createPerson(final Person person) {
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+	@Consumes( {APPLICATION_JSON, APPLICATION_XML} )
+	public long createPerson(@NotNull final Person person) {
 		Person newPerson;
-		if (person.getIdentity() == 0) {
+		final boolean insert = person.getIdentity() == 0;
+		messengerManager.getTransaction().begin();
+		System.out.println("INSERT: " + insert);
+		if (insert) {
 			Document avatar = messengerManager.find(Document.class, 1L);
-			 newPerson = new Person(avatar);
+			newPerson = new Person(avatar);
 		} else {
 			newPerson = messengerManager.find(Person.class, person.getIdentity());
 		}
+		System.out.println("Sent: " + person.getMail());
 		newPerson.setMail(person.getMail());
 		newPerson.setGroup(person.getGroup());
 		newPerson.getAddress().setCity(person.getAddress().getCity());
@@ -93,10 +101,18 @@ public class PersonService {
 		newPerson.getAddress().setStreet(person.getAddress().getStreet());
 		newPerson.getName().setFamily(person.getName().getFamily());
 		newPerson.getName().setGiven(person.getName().getGiven());
+		System.out.println("Created: " + person.getMail());
 		
-		messengerManager.getTransaction().begin();
-		messengerManager.merge(newPerson);
-		messengerManager.getTransaction().commit();
+		try {
+			if (insert) {
+				messengerManager.persist(newPerson);
+			} else {
+				messengerManager.flush();				
+			}
+			messengerManager.getTransaction().commit();
+		} catch(RuntimeException e) {
+			e.printStackTrace();
+		}
 		
 		return newPerson.getIdentity();
 	}
@@ -107,7 +123,6 @@ public class PersonService {
 	public List<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 		Person person = messengerManager.find(Person.class, identity);
 
 		if (person == null) {
@@ -127,7 +142,6 @@ public class PersonService {
 	public List<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 		Person person = messengerManager.find(Person.class, identity);
 
 		if (person == null) {
