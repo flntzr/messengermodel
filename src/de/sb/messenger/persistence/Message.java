@@ -24,11 +24,13 @@ public class Message extends BaseEntity {
 
 
 
+	@XmlElement
 	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "authorReference", nullable = false, updatable = false)
 	private Person author;
 
+	@XmlElement
 	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "subjectReference", nullable = false, updatable = false)
@@ -37,7 +39,7 @@ public class Message extends BaseEntity {
 	@XmlElement
 	@NotNull
 	@Size(min = 1, max = 4093)
-	@Column(name = "body", nullable = false)
+	@Column(nullable = false)
 	private String body;
 
 	public Message(Person author, BaseEntity subject) {
@@ -49,12 +51,10 @@ public class Message extends BaseEntity {
 		this(null, null);
 	}
 
-	@XmlElement
 	public Person getAuthor() {
 		return author;
 	}
 
-	@XmlElement
 	public BaseEntity getSubject() {
 		return subject;
 	}
