@@ -11,16 +11,15 @@ import javax.xml.bind.annotation.XmlElement;
 @Embeddable
 public class Name {
 
-	// nullable & updateable bei allen column & joincolumns hinzufügen
 
 	@NotNull
 	@Size(min = 1, max = 31)
-	@Column(name = "givenName", nullable = false)
+	@Column(name = "givenName", nullable = false, updatable = true)
 	private String given;
 
 	@NotNull
 	@Size(min = 1, max = 31)
-	@Column(name = "familyName", nullable = false)
+	@Column(name = "familyName", nullable = false, updatable = true)
 	private String family;
 
 	public Name() {

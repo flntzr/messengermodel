@@ -1,5 +1,6 @@
 package de.sb.messenger.persistence;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,7 +39,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	private final long identity;
 
 	//@Version -> search in wiki: optimistic locking
-	@Column(nullable = false, updatable = false)
+	@Column(nullable = false, updatable = true)
 	private int version;
 
 	@Column(nullable = false, updatable = false)
@@ -50,7 +51,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	public BaseEntity() {
 		this.identity = 0;
 		this.version = 1;
-		this.messagesCaused = new HashSet<>();
+		this.messagesCaused = Collections.emptySet();
 		this.creationTimestamp = System.currentTimeMillis();
 	}
 

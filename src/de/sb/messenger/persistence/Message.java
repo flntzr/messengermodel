@@ -39,7 +39,7 @@ public class Message extends BaseEntity {
 	@XmlElement
 	@NotNull
 	@Size(min = 1, max = 4093)
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	private String body;
 
 	public Message(Person author, BaseEntity subject) {

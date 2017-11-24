@@ -1,6 +1,7 @@
 package de.sb.messenger.persistence;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -37,14 +38,14 @@ public class Person extends BaseEntity {
 
 	
 	@XmlElement
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@NotNull
 	@Size(min = 1, max = 128)
 	@Pattern(regexp = "^.+@.+$")
 	@CacheIndex(updateable = true)
 	private String email;
 
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@NotNull
 	@Size(min = 32, max = 32)
 	private byte[] passwordHash;
@@ -52,7 +53,7 @@ public class Person extends BaseEntity {
 	@XmlElement
 	@Enumerated(EnumType.STRING)
 	@NotNull
-	@Column(name = "groupAlias", nullable = false)
+	@Column(name = "groupAlias", nullable = false, updatable = true)
 	private Group group;
 
 	@NotNull
@@ -69,7 +70,7 @@ public class Person extends BaseEntity {
 
 	@NotNull
 	@ManyToOne(optional = false)
-	@JoinColumn(name = "avatarReference", nullable = false)
+	@JoinColumn(name = "avatarReference", nullable = false, updatable = true)
 	private Document avatar;
 
 	@NotNull
@@ -94,8 +95,8 @@ public class Person extends BaseEntity {
 		this.name = new Name();
 		this.address = new Address();
 		this.group = Group.USER;
-		this.messagesAuthored = new HashSet<>();
-		this.peopleObserving = new HashSet<>();
+		this.messagesAuthored = Collections.emptySet();
+		this.peopleObserving = Collections.emptySet();
 		this.peopleObserved = new HashSet<>();
 		this.avatar = avatar;
 	}

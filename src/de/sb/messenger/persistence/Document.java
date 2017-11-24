@@ -28,20 +28,20 @@ public class Document extends BaseEntity {
 
 	@XmlElement
 	@NotNull
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@Size(min = 32, max = 32)
 	private byte[] contentHash;
 
 	@XmlElement
 	@NotNull
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@Size(min = 1, max = 63)
 	@Pattern(regexp = "^[a-z]+/[a-z.+-]+$")
 	private String contentType;
 
 	@XmlElement
 	@NotNull
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@Size(min = 1, max = 16777215)
 	private byte[] content;
 

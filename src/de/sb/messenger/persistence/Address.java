@@ -10,18 +10,18 @@ import javax.xml.bind.annotation.XmlElement;
 public class Address {
 
 	@Size(max = 63)
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@XmlElement
 	private String street;
 
 	@Size(max = 15)
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@XmlElement
 	private String postcode;
 
 	@NotNull
 	@Size(min = 1, max = 63)
-	@Column(nullable = false)
+	@Column(nullable = false, updatable = true)
 	@XmlElement
 	private String city;
 
