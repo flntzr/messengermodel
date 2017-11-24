@@ -192,9 +192,6 @@ public class PersonService {
 		return Response.status(OK).type(avatar.getContentType()).entity(avatar.getContent()).build();
 	}
 
-	@PUT
-	@Path("{identity}/avatar")
-	@Consumes(WILDCARD)
 
 
 
