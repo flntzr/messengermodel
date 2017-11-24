@@ -7,6 +7,7 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.security.PermitAll;
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
@@ -24,6 +25,7 @@ import javax.ws.rs.QueryParam;
 
 import de.sb.messenger.persistence.Document;
 import de.sb.messenger.persistence.Group;
+import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
 
@@ -110,16 +112,23 @@ public class PersonService {
 	public List<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		Person person = messengerManager.find(Person.class, identity);
+		TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p.peopleObserving FROM Person p WHERE "
+						+ "p.identity = :identity",
+				Person.class);
 
-		if (person == null) {
+		List<Person> peopleObserving= queryPeopleObeserving.setParameter("identity", identity).getResultList();
+
+		if(peopleObserving.isEmpty())
+			throw new ClientErrorException(NOT_FOUND);
+
+		List<Person> sortedPeopleObserving = getSortedPersonListByIds(peopleObserving);
+
+		if (sortedPeopleObserving == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 
-		List<Person> peopleObserving = new ArrayList<>(person.getPeopleObserving());
-		// TODO sort this list
 
-		return peopleObserving;
+		return sortedPeopleObserving;
 
 	}
 
@@ -129,16 +138,74 @@ public class PersonService {
 	public List<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		Person person = messengerManager.find(Person.class, identity);
+		TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p.peopleObserved FROM Person p WHERE "
+						+ "p.identity = :identity",
+				Person.class);
 
-		if (person == null) {
+		List<Person> peopleObserved = queryPeopleObeserved.setParameter("identity", identity).getResultList();
+
+		if(peopleObserved.isEmpty())
+			throw new ClientErrorException(NOT_FOUND);
+
+		List<Person> sortedPeopleObserved = getSortedPersonListByIds(peopleObserved);
+
+		if (sortedPeopleObserved == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
-		List<Person> peopleObserved = new ArrayList<>(person.getPeopleObserved());
 
-		// TODO sort this list
 
-		return peopleObserved;
+		return sortedPeopleObserved;
+	}
+
+	@GET
+	@Path("{identity}/messagesAuthored")
+	@Produces({ APPLICATION_JSON, APPLICATION_XML })
+	public List<Message> getMessagesAuthored(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
+		TypedQuery<Message> queryMessagesAuthored = messengerManager.createQuery("SELECT m FROM Message m WHERE "
+						+ "m.author.identity = :identity "
+						+ "ORDER BY m.identity",
+				Message.class);
+
+		List<Message> messages = queryMessagesAuthored.setParameter("identity", identity).getResultList();
+
+		if(messages.isEmpty())
+			throw new ClientErrorException(NOT_FOUND);
+
+		return messages;
+	}
+
+	// HELPER
+
+	private List<Person> getSortedPersonListByIds(List<Person> peopleIds){
+
+		List<Long> identities = new ArrayList<>();
+		peopleIds.forEach(person -> identities.add(person.getIdentity()));
+
+		TypedQuery<Person> queryPeopleOrdered = messengerManager.createQuery(createDynamicPersonQueryById(identities),
+				Person.class);
+
+		for (int i = 0, identitiesSize = identities.size(); i < identitiesSize; i++) {
+			queryPeopleOrdered.setParameter("identity"+i, identities.get(i));
+		}
+
+		return queryPeopleOrdered.getResultList();
+
+	}
+
+	private String createDynamicPersonQueryById(List<Long> identities){
+		StringBuilder queryString = new StringBuilder("SELECT p FROM Person p WHERE ");
+
+		for (int i = 0, identitiesSize = identities.size(); i < identitiesSize; i++) {
+			if(i == identitiesSize - 1){
+				queryString.append(" (p.identity = :identity").append(i).append(") ").append("ORDER BY p.name.family, p.name.given, p.email");
+			} else {
+				queryString.append(" (p.identity = :identity").append(i).append(") OR ");
+			}
+		}
+
+		return queryString.toString();
 	}
 
 
