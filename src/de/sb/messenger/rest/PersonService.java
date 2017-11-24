@@ -1,17 +1,16 @@
 package de.sb.messenger.rest;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.APPLICATION_XML;
+import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.security.PermitAll;
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
-import javax.validation.Valid;
+import javax.print.Doc;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.Consumes;
@@ -22,6 +21,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import de.sb.messenger.persistence.Document;
 import de.sb.messenger.persistence.Group;
@@ -69,7 +70,6 @@ public class PersonService {
 	@Path("{identity}")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public Person queryPerson(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 		Person person = messengerManager.find(Person.class, identity);
 		if (person == null) {
 			throw new ClientErrorException(NOT_FOUND);
@@ -175,6 +175,29 @@ public class PersonService {
 
 		return messages;
 	}
+
+
+	@GET
+	@Path("{identity}/avatar")
+	@Produces(WILDCARD)
+	public Response getAvatar(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+		Person person = messengerManager.find(Person.class, identity);
+
+		if(person == null){
+			throw new ClientErrorException(NOT_FOUND);
+		}
+
+		Document avatar = person.getAvatar();
+
+		return Response.status(OK).type(avatar.getContentType()).entity(avatar.getContent()).build();
+	}
+
+	@PUT
+	@Path("{identity}/avatar")
+	@Consumes(WILDCARD)
+
+
+
 
 	// HELPER
 
