@@ -6,16 +6,7 @@ import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
-import javax.persistence.RollbackException;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -25,6 +16,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
