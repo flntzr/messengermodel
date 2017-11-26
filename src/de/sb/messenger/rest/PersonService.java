@@ -1,34 +1,27 @@
 package de.sb.messenger.rest;
 
-import static javax.ws.rs.core.MediaType.*;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.OK;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Persistence;
-import javax.persistence.TypedQuery;
-import javax.print.Doc;
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
-
 import de.sb.messenger.persistence.Document;
 import de.sb.messenger.persistence.Group;
 import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
+
+import javax.persistence.EntityManager;
+import javax.persistence.Persistence;
+import javax.persistence.TypedQuery;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
 
 @Path("people")
 public class PersonService {
@@ -116,9 +109,9 @@ public class PersonService {
 						+ "p.identity = :identity",
 				Person.class);
 
-		List<Person> peopleObserving= queryPeopleObeserving.setParameter("identity", identity).getResultList();
+		List<Person> peopleObserving = queryPeopleObeserving.setParameter("identity", identity).getResultList();
 
-		if(peopleObserving.isEmpty())
+		if(peopleObserving.isEmpty() || peopleObserving.get(0) == null)
 			throw new ClientErrorException(NOT_FOUND);
 
 		List<Person> sortedPeopleObserving = getSortedPersonListByIds(peopleObserving);
@@ -126,8 +119,6 @@ public class PersonService {
 		if (sortedPeopleObserving == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
-
-
 		return sortedPeopleObserving;
 
 	}
@@ -192,6 +183,75 @@ public class PersonService {
 		return Response.status(OK).type(avatar.getContentType()).entity(avatar.getContent()).build();
 	}
 
+
+	@PUT
+	@Path("{identity}/avatar")
+	@Consumes(WILDCARD)
+	public long putAvatar(@HeaderParam("Authorization") final String authentication,
+						  @HeaderParam("Content-Type") final String contentType,
+						  final InputStream content,
+						  @PathParam("identity") final long identity) throws IOException {
+
+		Person person = messengerManager.find(Person.class, identity);
+
+		TypedQuery<Document> queryDocuments = messengerManager.createQuery("SELECT d FROM Document d", Document.class);
+
+		List<Document> documents = queryDocuments.getResultList();
+
+		if(person == null){
+			throw new ClientErrorException(NOT_FOUND);
+		}
+
+		final Document[] newDocument = {null};
+
+		if(content == null){
+			newDocument[0] = messengerManager.find(Document.class, 1L);
+		} else {
+			int nRead = 0;
+			ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
+			byte[] contentBytes = new byte[1000];
+			while((nRead = content.read(contentBytes, 0, contentBytes.length)) != -1){
+				contentBuffer.write(contentBytes, 0, nRead);
+			}
+			byte[] newContentHash = Document.mediaHash(contentBuffer.toByteArray());
+			final boolean[] docSet = {false};
+			// check if document with same content hash exists in database
+			// if then take that and set is as the persons avatar (newDocument[0])
+			documents.forEach(document -> {
+				if(Arrays.equals(newContentHash, document.getContentHash())){
+					newDocument[0] = document;
+					docSet[0] = true;
+				}
+			});
+
+			// if send content hash not in database, create new document and save it in database
+			if(!docSet[0]){
+				newDocument[0] = new Document();
+				newDocument[0].setContent(contentBuffer.toByteArray());
+				newDocument[0].setContentType(contentType);
+				// weird exception
+				// Exception Description: The method invocation of the method [protected native java.lang.Object java.lang.Object.clone()
+				// 				throws java.lang.CloneNotSupportedException] on the object [[]], of class [class java.util.Collections$EmptySet],
+				// 				triggered an exception.
+				// during commit, still saves document in database
+				try{
+					messengerManager.getTransaction().begin();
+					messengerManager.persist(newDocument[0]);
+					messengerManager.getTransaction().commit(); // have to commit otherwise updating the person fails because document id not updated
+				} catch (Exception e){
+					e.printStackTrace();
+				}
+			}
+		}
+
+		// update persons avatar
+		person.setAvatar(newDocument[0]);
+		messengerManager.getTransaction().begin();
+		messengerManager.merge(person);
+		messengerManager.getTransaction().commit();
+
+		return person.getIdentity();
+	}
 
 
 
