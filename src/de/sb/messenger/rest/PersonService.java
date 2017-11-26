@@ -6,8 +6,15 @@ import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import javax.persistence.Query;
+import javax.persistence.RollbackException;
 import javax.persistence.TypedQuery;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
@@ -121,6 +128,54 @@ public class PersonService {
 		}
 		return sortedPeopleObserving;
 
+	}
+	
+	@PUT
+	@Path("{identity}/peopleObserved")
+	@Consumes({APPLICATION_FORM_URLENCODED})
+	public void setPeopleObserved(
+			@HeaderParam("Authorization") final String authentication, 
+			@PathParam("identity") final long identity, 
+			@FormParam("peopleObserved") final Set<Long> observedIDs
+			) {
+		Person observer = messengerManager.find(Person.class, identity);
+		TypedQuery<Person> findObservedQuery = messengerManager.createQuery("SELECT p FROM Person p where (p.identity in :peopleObserved)", Person.class);
+		findObservedQuery.setParameter("peopleObserved", observedIDs);
+		List<Person> observed = findObservedQuery.getResultList();
+		if (observed.size() != observedIDs.size()) {
+			throw new ClientErrorException(NOT_FOUND);
+		}
+		if (observer == null) {
+			throw new ClientErrorException(NOT_FOUND);
+		}
+		EntityTransaction tx = messengerManager.getTransaction();
+		try {
+			tx.begin();
+			// delete old references
+			Query deleteOldQuery = messengerManager.createNativeQuery("DELETE FROM ObservationAssociation WHERE observingReference = ?1");
+			deleteOldQuery.setParameter(1, identity);
+			deleteOldQuery.executeUpdate();
+			
+			// add new references
+			for (long observedID: observedIDs) {
+				Query insertQuery = messengerManager.createNativeQuery("INSERT INTO ObservationAssociation (observingReference, observedReference) "
+						+ "VALUES (?1, ?2)");
+				insertQuery.setParameter(1, identity);
+				insertQuery.setParameter(2, observedID);
+				insertQuery.executeUpdate();
+				
+			}
+			
+			// refresh 2nd level cache for observer and observed
+			tx.commit();
+			messengerManager.refresh(observer);
+			tx.begin();
+			observed.forEach((o) -> messengerManager.refresh(o));
+			tx.commit();		
+		} catch(RollbackException e) {
+			tx.rollback();
+			throw e;
+		}
 	}
 
 	@GET
