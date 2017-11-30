@@ -24,8 +24,9 @@ import static javax.ws.rs.core.Response.Status.OK;
 
 @Path("people")
 public class PersonService {
-	
-	private static final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+
+	private static final EntityManagerFactory messengerFactory = Persistence.createEntityManagerFactory("messenger");
+	private static final EntityManager messengerManager = messengerFactory.createEntityManager();
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
@@ -104,16 +105,16 @@ public class PersonService {
 	public List<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p.peopleObserving FROM Person p WHERE "
+		TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p FROM Person p WHERE "
 						+ "p.identity = :identity",
 				Person.class);
 
-		List<Person> peopleObserving = queryPeopleObeserving.setParameter("identity", identity).getResultList();
+		Person person = queryPeopleObeserving.setParameter("identity", identity).getSingleResult();
 
-		if(peopleObserving.isEmpty() || peopleObserving.get(0) == null)
+		if(person.getPeopleObserving().isEmpty())
 			throw new ClientErrorException(NOT_FOUND);
 
-		List<Person> sortedPeopleObserving = getSortedPersonListByIds(peopleObserving);
+		List<Person> sortedPeopleObserving = getSortedPersonListByIds(person.getPeopleObserving());
 
 		if (sortedPeopleObserving == null) {
 			throw new ClientErrorException(NOT_FOUND);
@@ -160,10 +161,14 @@ public class PersonService {
 			
 			// refresh 2nd level cache for observer and observed
 			tx.commit();
-			messengerManager.refresh(observer);
+			/*messengerManager.refresh(observer);
 			tx.begin();
 			observed.forEach((o) -> messengerManager.refresh(o));
-			tx.commit();		
+			tx.commit();*/
+			Cache cache = messengerFactory.getCache();
+			cache.evict(Person.class, observer.getIdentity());
+			observed.forEach((o) -> cache.evict(Person.class, o.getIdentity()));
+
 		} catch(RollbackException e) {
 			tx.rollback();
 			throw e;
@@ -176,18 +181,18 @@ public class PersonService {
 	public List<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p.peopleObserved FROM Person p WHERE "
+		TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p FROM Person p WHERE "
 						+ "p.identity = :identity",
 				Person.class);
 
-		List<Person> peopleObserved = queryPeopleObeserved.setParameter("identity", identity).getResultList();
+		Person person = queryPeopleObeserved.setParameter("identity", identity).getSingleResult();
 
-		if(peopleObserved.isEmpty())
+		if(person.getPeopleObserved().isEmpty())
 			throw new ClientErrorException(NOT_FOUND);
 
-		List<Person> sortedPeopleObserved = getSortedPersonListByIds(peopleObserved);
+		List<Person> sortedPeopleObserved = getSortedPersonListByIds(person.getPeopleObserved());
 
-		if (sortedPeopleObserved == null) {
+		if (sortedPeopleObserved.size() == 0 || sortedPeopleObserved == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 
@@ -305,7 +310,7 @@ public class PersonService {
 
 	// HELPER
 
-	private List<Person> getSortedPersonListByIds(List<Person> peopleIds){
+	private List<Person> getSortedPersonListByIds(Set<Person> peopleIds){
 
 		List<Long> identities = new ArrayList<>();
 		peopleIds.forEach(person -> identities.add(person.getIdentity()));

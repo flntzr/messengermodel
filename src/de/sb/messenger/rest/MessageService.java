@@ -4,14 +4,8 @@ import de.sb.messenger.persistence.BaseEntity;
 import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.TypedQuery;
-import javax.validation.constraints.NotNull;
+import javax.persistence.*;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import java.util.List;
 
@@ -24,8 +18,8 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 public class MessageService {
 
 
-    private static final EntityManagerFactory factory = Persistence.createEntityManagerFactory("messenger");
-    private static final EntityManager messengerManager = factory.createEntityManager();
+    private static final EntityManagerFactory managerFactory = Persistence.createEntityManagerFactory("messenger");
+    private static final EntityManager messengerManager = managerFactory.createEntityManager();
 
 
     @GET
@@ -60,8 +54,12 @@ public class MessageService {
         newMessage.setBody(body);
 
         messengerManager.persist(newMessage);
-        messengerManager.flush();
         messengerManager.getTransaction().commit();
+
+        // evict author and subject from second level cache
+        Cache cache = managerFactory.getCache();
+        cache.evict(Person.class, author.getIdentity());
+        cache.evict(BaseEntity.class, subject.getIdentity());
 
         return newMessage.getIdentity();
     }
