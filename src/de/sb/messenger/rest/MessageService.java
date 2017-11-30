@@ -1,6 +1,7 @@
 package de.sb.messenger.rest;
 
 import de.sb.messenger.persistence.BaseEntity;
+import de.sb.messenger.persistence.Group;
 import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
@@ -41,7 +42,11 @@ public class MessageService {
                               @FormParam("body") final String body, @FormParam("authorReference") final long authorReference,
                               @FormParam("subjectReference") final long subjectReference){
 
-        Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
+        final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+        if(requester.getIdentity() != authorReference){
+            throw new NotAuthorizedException("Basic");
+        }
         final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 

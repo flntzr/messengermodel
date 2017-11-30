@@ -73,11 +73,23 @@ public class PersonService {
 		}
 		return person;
 	}
-	
+
+	@GET
+	@Path("/requester")
+	@Produces({ APPLICATION_JSON, APPLICATION_XML })
+	public Person getRequester(@HeaderParam("Authorization") final String authentication){
+		return Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+	}
+
 	@PUT
 	@Consumes( {APPLICATION_JSON, APPLICATION_XML} )
 	public long createPerson(@HeaderParam("Authorization") final String authentication, @NotNull final Person person) {
-		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
+		if(requester.getGroup() != Group.ADMIN){
+			throw new NotAuthorizedException("Basic");
+		}
+
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person newPerson;
@@ -151,7 +163,11 @@ public class PersonService {
 			@FormParam("peopleObserved") final Set<Long> observedIDs
 			) {
 
-		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
+		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		if(requester.getGroup() != Group.ADMIN){
+			throw new NotAuthorizedException("Basic");
+		}
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person observer = messengerManager.find(Person.class, identity);
@@ -278,7 +294,10 @@ public class PersonService {
 						  @HeaderParam("Content-Type") final String contentType,
 						  final InputStream content,
 						  @PathParam("identity") final long identity) throws IOException {
-		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		if(requester.getGroup() != Group.ADMIN){
+			throw new NotAuthorizedException("Basic");
+		}
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person person = messengerManager.find(Person.class, identity);
