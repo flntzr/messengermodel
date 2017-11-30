@@ -8,6 +8,7 @@ import de.sb.toolbox.net.RestCredentials;
 import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
 import javax.persistence.*;
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -104,9 +105,9 @@ public class PersonService {
 			}
 			messengerManager.getTransaction().commit();
 		} catch (Exception e){
-			System.err.println(e.toString());
+			e.printStackTrace();
 		} finally {
-			messengerManager.getTransaction().rollback();
+//			messengerManager.getTransaction().rollback();
 			messengerManager.getTransaction().begin();
 		}
 		return newPerson.getIdentity();
@@ -281,14 +282,13 @@ public class PersonService {
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person person = messengerManager.find(Person.class, identity);
+		if(person == null){
+			throw new ClientErrorException(NOT_FOUND);
+		}
 
 		TypedQuery<Document> queryDocuments = messengerManager.createQuery("SELECT d FROM Document d", Document.class);
 
 		List<Document> documents = queryDocuments.getResultList();
-
-		if(person == null){
-			throw new ClientErrorException(NOT_FOUND);
-		}
 
 		Document newDocument = null;
 
@@ -303,9 +303,9 @@ public class PersonService {
 			}
 			byte[] newContentHash = Document.mediaHash(contentBuffer.toByteArray());
 			boolean docSet = false;
+
 			// check if document with same content hash exists in database
 			// if then take that and set is as the persons avatar (newDocument[0])
-
 			for (Document current : documents) {
 				if(Arrays.equals(newContentHash, current.getContentHash())){
 					newDocument = current;
@@ -335,7 +335,6 @@ public class PersonService {
 		try{
 			messengerManager.merge(person);
 			messengerManager.getTransaction().commit();
-
 		} catch (Exception e){
 			e.printStackTrace();
 		} finally {
