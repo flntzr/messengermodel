@@ -132,6 +132,9 @@ public class PersonService {
 			@FormParam("peopleObserved") final Set<Long> observedIDs
 			) {
 		Person observer = messengerManager.find(Person.class, identity);
+		if(observedIDs.isEmpty()){
+			throw new ClientErrorException(NOT_FOUND);
+		}
 		TypedQuery<Person> findObservedQuery = messengerManager.createQuery("SELECT p FROM Person p where (p.identity in :peopleObserved)", Person.class);
 		findObservedQuery.setParameter("peopleObserved", observedIDs);
 		List<Person> observed = findObservedQuery.getResultList();
