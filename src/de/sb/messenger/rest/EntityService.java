@@ -27,6 +27,7 @@ import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.Copyright;
 import de.sb.toolbox.net.RestCredentials;
+import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
 
 /**
@@ -61,7 +62,7 @@ public class EntityService {
 	public BaseEntity queryIdentity (@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 		final BaseEntity entity = messengerManager.find(BaseEntity.class, identity);
 		if (entity == null) throw new NotFoundException();
 		return entity;

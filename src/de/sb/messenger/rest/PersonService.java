@@ -5,6 +5,7 @@ import de.sb.messenger.persistence.Group;
 import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
+import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -13,20 +14,15 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static javax.ws.rs.core.MediaType.*;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.OK;
+import static javax.ws.rs.core.Response.Status.*;
 
 @Path("people")
 public class PersonService {
 
 	private static final EntityManagerFactory messengerFactory = Persistence.createEntityManagerFactory("messenger");
-	private static final EntityManager messengerManager = messengerFactory.createEntityManager();
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
@@ -34,7 +30,10 @@ public class PersonService {
 		@QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
 		@QueryParam("mail") final String mail, @QueryParam("street") final String street,
 		@QueryParam("postcode") final String postcode, @QueryParam("city") final String city, @QueryParam("group") final Group group) {
-		TypedQuery<Person> query = messengerManager.createQuery("SELECT p FROM Person p WHERE "
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManagerLife = RestJpaLifecycleProvider.entityManager("messenger");
+
+		TypedQuery<Person> query = messengerManagerLife.createQuery("SELECT p FROM Person p WHERE "
 				+ "(:givenName is null OR p.name.given = :givenName) AND "
 				+ "(:familyName is null or p.name.family = :familyName) AND " 
 				+ "(:mail IS null OR p.email = :mail) AND "
@@ -63,6 +62,10 @@ public class PersonService {
 	@Path("{identity}")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public Person queryPerson(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
+
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
+
 		Person person = messengerManager.find(Person.class, identity);
 		if (person == null) {
 			throw new ClientErrorException(NOT_FOUND);
@@ -72,10 +75,13 @@ public class PersonService {
 	
 	@PUT
 	@Consumes( {APPLICATION_JSON, APPLICATION_XML} )
-	public long createPerson(@NotNull final Person person) {
+	public long createPerson(@HeaderParam("Authorization") final String authentication, @NotNull final Person person) {
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
+
 		Person newPerson;
 		final boolean insert = person.getIdentity() == 0;
-		messengerManager.getTransaction().begin();
+
 		if (insert) {
 			Document avatar = messengerManager.find(Document.class, 1L);
 			newPerson = new Person(avatar);
@@ -89,13 +95,20 @@ public class PersonService {
 		newPerson.getAddress().setStreet(person.getAddress().getStreet());
 		newPerson.getName().setFamily(person.getName().getFamily());
 		newPerson.getName().setGiven(person.getName().getGiven());
-		
-		if (insert) {
-			messengerManager.persist(newPerson);
-		} else {
-			messengerManager.flush();				
+
+		try {
+			if (insert) {
+				messengerManager.persist(newPerson);
+			} else {
+				messengerManager.flush();
+			}
+			messengerManager.getTransaction().commit();
+		} catch (Exception e){
+			System.err.println(e.toString());
+		} finally {
+			messengerManager.getTransaction().rollback();
+			messengerManager.getTransaction().begin();
 		}
-		messengerManager.getTransaction().commit();
 		return newPerson.getIdentity();
 	}
 
@@ -104,17 +117,22 @@ public class PersonService {
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public List<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
-		TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p FROM Person p WHERE "
-						+ "p.identity = :identity",
-				Person.class);
-
-		Person person = queryPeopleObeserving.setParameter("identity", identity).getSingleResult();
-
-		if(person.getPeopleObserving().isEmpty())
+		Person person = messengerManager.find(Person.class, identity);
+		if(person == null || person.getPeopleObserving().isEmpty())
 			throw new ClientErrorException(NOT_FOUND);
 
-		List<Person> sortedPeopleObserving = getSortedPersonListByIds(person.getPeopleObserving());
+		TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p FROM Person p WHERE "
+						+ "(p.identity in :peopleObserving)"
+						+ "ORDER BY p.name.family, p.name.given, p.email",
+				Person.class);
+
+		Set<Long> observingIDs = new HashSet<>();
+
+		person.getPeopleObserving().forEach(currentPerson -> observingIDs.add(currentPerson.getIdentity()));
+
+		List<Person> sortedPeopleObserving = queryPeopleObeserving.setParameter("peopleObserving", observingIDs).getResultList();
 
 		if (sortedPeopleObserving == null) {
 			throw new ClientErrorException(NOT_FOUND);
@@ -131,9 +149,13 @@ public class PersonService {
 			@PathParam("identity") final long identity, 
 			@FormParam("peopleObserved") final Set<Long> observedIDs
 			) {
+
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
+
 		Person observer = messengerManager.find(Person.class, identity);
 		if(observedIDs.isEmpty()){
-			throw new ClientErrorException(NOT_FOUND);
+			throw new ClientErrorException(BAD_REQUEST);
 		}
 		TypedQuery<Person> findObservedQuery = messengerManager.createQuery("SELECT p FROM Person p where (p.identity in :peopleObserved)", Person.class);
 		findObservedQuery.setParameter("peopleObserved", observedIDs);
@@ -145,37 +167,40 @@ public class PersonService {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 		EntityTransaction tx = messengerManager.getTransaction();
-		try {
-			tx.begin();
-			// delete old references
-			Query deleteOldQuery = messengerManager.createNativeQuery("DELETE FROM ObservationAssociation WHERE observingReference = ?1");
-			deleteOldQuery.setParameter(1, identity);
-			deleteOldQuery.executeUpdate();
-			
-			// add new references
-			for (long observedID: observedIDs) {
-				Query insertQuery = messengerManager.createNativeQuery("INSERT INTO ObservationAssociation (observingReference, observedReference) "
-						+ "VALUES (?1, ?2)");
-				insertQuery.setParameter(1, identity);
-				insertQuery.setParameter(2, observedID);
-				insertQuery.executeUpdate();
-				
-			}
-			
-			// refresh 2nd level cache for observer and observed
-			tx.commit();
-			/*messengerManager.refresh(observer);
-			tx.begin();
-			observed.forEach((o) -> messengerManager.refresh(o));
-			tx.commit();*/
-			Cache cache = messengerFactory.getCache();
-			cache.evict(Person.class, observer.getIdentity());
-			observed.forEach((o) -> cache.evict(Person.class, o.getIdentity()));
 
-		} catch(RollbackException e) {
-			tx.rollback();
-			throw e;
+		// delete old references
+		Query deleteOldQuery = messengerManager.createNativeQuery("DELETE FROM ObservationAssociation WHERE observingReference = ?1");
+		deleteOldQuery.setParameter(1, identity);
+		deleteOldQuery.executeUpdate();
+
+		// add new references
+		for (long observedID: observedIDs) {
+			Query insertQuery = messengerManager.createNativeQuery("INSERT INTO ObservationAssociation (observingReference, observedReference) "
+					+ "VALUES (?1, ?2)");
+			insertQuery.setParameter(1, identity);
+			insertQuery.setParameter(2, observedID);
+			insertQuery.executeUpdate();
+
 		}
+
+		// refresh 2nd level cache for observer and observed
+		try{
+			tx.commit();
+		} catch (Exception e){
+			System.err.println(e);
+		} finally {
+			tx.rollback();
+			tx.begin();
+		}
+		/*messengerManager.refresh(observer);
+		tx.begin();
+		observed.forEach((o) -> messengerManager.refresh(o));
+		tx.commit();*/
+		Cache cache = messengerFactory.getCache();
+		cache.evict(Person.class, observer.getIdentity());
+		observed.forEach((o) -> cache.evict(Person.class, o.getIdentity()));
+
+
 	}
 
 	@GET
@@ -183,22 +208,27 @@ public class PersonService {
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public List<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
-		TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p FROM Person p WHERE "
-						+ "p.identity = :identity",
-				Person.class);
+		Person person = messengerManager.find(Person.class, identity);
 
-		Person person = queryPeopleObeserved.setParameter("identity", identity).getSingleResult();
-
-		if(person.getPeopleObserved().isEmpty())
+		if(person == null || person.getPeopleObserved().isEmpty())
 			throw new ClientErrorException(NOT_FOUND);
 
-		List<Person> sortedPeopleObserved = getSortedPersonListByIds(person.getPeopleObserved());
+		TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p FROM Person p WHERE "
+						+ "(p.identity in :peopleObserved)"
+						+  "ORDER BY p.name.family, p.name.given, p.email",
+				Person.class);
+
+		Set<Long> observedIDs = new HashSet<>();
+
+		person.getPeopleObserved().forEach(currentPerson -> observedIDs.add(currentPerson.getIdentity()));
+
+		List<Person> sortedPeopleObserved = queryPeopleObeserved.setParameter("peopleObserved", observedIDs).getResultList();
 
 		if (sortedPeopleObserved.size() == 0 || sortedPeopleObserved == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
-
 
 		return sortedPeopleObserved;
 	}
@@ -208,6 +238,7 @@ public class PersonService {
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public List<Message> getMessagesAuthored(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		TypedQuery<Message> queryMessagesAuthored = messengerManager.createQuery("SELECT m FROM Message m WHERE "
 						+ "m.author.identity = :identity "
@@ -227,14 +258,14 @@ public class PersonService {
 	@Path("{identity}/avatar")
 	@Produces(WILDCARD)
 	public Response getAvatar(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 		Person person = messengerManager.find(Person.class, identity);
 
 		if(person == null){
 			throw new ClientErrorException(NOT_FOUND);
 		}
-
 		Document avatar = person.getAvatar();
-
 		return Response.status(OK).type(avatar.getContentType()).entity(avatar.getContent()).build();
 	}
 
@@ -242,10 +273,12 @@ public class PersonService {
 	@PUT
 	@Path("{identity}/avatar")
 	@Consumes(WILDCARD)
-	public long putAvatar(@HeaderParam("Authorization") final String authentication,
+	public void putAvatar(@HeaderParam("Authorization") final String authentication,
 						  @HeaderParam("Content-Type") final String contentType,
 						  final InputStream content,
 						  @PathParam("identity") final long identity) throws IOException {
+		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person person = messengerManager.find(Person.class, identity);
 
@@ -257,10 +290,10 @@ public class PersonService {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 
-		final Document[] newDocument = {null};
+		Document newDocument = null;
 
 		if(content == null){
-			newDocument[0] = messengerManager.find(Document.class, 1L);
+			newDocument = messengerManager.find(Document.class, 1L);
 		} else {
 			int nRead = 0;
 			ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
@@ -269,79 +302,48 @@ public class PersonService {
 				contentBuffer.write(contentBytes, 0, nRead);
 			}
 			byte[] newContentHash = Document.mediaHash(contentBuffer.toByteArray());
-			final boolean[] docSet = {false};
+			boolean docSet = false;
 			// check if document with same content hash exists in database
 			// if then take that and set is as the persons avatar (newDocument[0])
-			documents.forEach(document -> {
-				if(Arrays.equals(newContentHash, document.getContentHash())){
-					newDocument[0] = document;
-					docSet[0] = true;
+
+			for (Document current : documents) {
+				if(Arrays.equals(newContentHash, current.getContentHash())){
+					newDocument = current;
+					docSet = true;
 				}
-			});
+			}
 
 			// if send content hash not in database, create new document and save it in database
-			if(!docSet[0]){
-				newDocument[0] = new Document();
-				newDocument[0].setContent(contentBuffer.toByteArray());
-				newDocument[0].setContentType(contentType);
-				// weird exception
-				// Exception Description: The method invocation of the method [protected native java.lang.Object java.lang.Object.clone()
-				// 				throws java.lang.CloneNotSupportedException] on the object [[]], of class [class java.util.Collections$EmptySet],
-				// 				triggered an exception.
-				// during commit, still saves document in database
+			if(!docSet){
+				newDocument = new Document();
+				newDocument.setContent(contentBuffer.toByteArray());
+				newDocument.setContentType(contentType);
 				try{
-					messengerManager.getTransaction().begin();
-					messengerManager.persist(newDocument[0]);
-					messengerManager.getTransaction().commit(); // have to commit otherwise updating the person fails because document id not updated
+					messengerManager.persist(newDocument);
+					// have to commit otherwise updating the person fails because document id not updated
+					messengerManager.getTransaction().commit();
 				} catch (Exception e){
 					e.printStackTrace();
+				} finally {
+					messengerManager.getTransaction().begin();
 				}
 			}
 		}
 
 		// update persons avatar
-		person.setAvatar(newDocument[0]);
-		messengerManager.getTransaction().begin();
-		messengerManager.merge(person);
-		messengerManager.getTransaction().commit();
+		person.setAvatar(newDocument);
+		try{
+			messengerManager.merge(person);
+			messengerManager.getTransaction().commit();
 
-		return person.getIdentity();
-	}
-
-
-
-
-	// HELPER
-
-	private List<Person> getSortedPersonListByIds(Set<Person> peopleIds){
-
-		List<Long> identities = new ArrayList<>();
-		peopleIds.forEach(person -> identities.add(person.getIdentity()));
-
-		TypedQuery<Person> queryPeopleOrdered = messengerManager.createQuery(createDynamicPersonQueryById(identities),
-				Person.class);
-
-		for (int i = 0, identitiesSize = identities.size(); i < identitiesSize; i++) {
-			queryPeopleOrdered.setParameter("identity"+i, identities.get(i));
+		} catch (Exception e){
+			e.printStackTrace();
+		} finally {
+			messengerManager.getTransaction().begin();
 		}
 
-		return queryPeopleOrdered.getResultList();
-
 	}
 
-	private String createDynamicPersonQueryById(List<Long> identities){
-		StringBuilder queryString = new StringBuilder("SELECT p FROM Person p WHERE ");
-
-		for (int i = 0, identitiesSize = identities.size(); i < identitiesSize; i++) {
-			if(i == identitiesSize - 1){
-				queryString.append(" (p.identity = :identity").append(i).append(") ").append("ORDER BY p.name.family, p.name.given, p.email");
-			} else {
-				queryString.append(" (p.identity = :identity").append(i).append(") OR ");
-			}
-		}
-
-		return queryString.toString();
-	}
 
 
 }
