@@ -8,6 +8,7 @@ import javax.ws.rs.NotAuthorizedException;
 
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.HttpCredentials;
+import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
 
 /**
@@ -28,10 +29,11 @@ public interface Authenticator {
 	 *         thread is not open
 	 * @throws NullPointerException (HTTP 500) if the given credentials are {@code null}
 	 */
-	@SuppressWarnings("unused")
+	//@SuppressWarnings("unused")
 	static public Person authenticate(final HttpCredentials.Basic credentials) throws NotAuthorizedException, PersistenceException, IllegalStateException, NullPointerException {
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
+
 		final String pql = "select p.identity from Person as p where p.email = :email and p.passwordHash = :passwordHash";
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
 
 		// Add JPA authentication by calculating the password hash from the given password,
 		// creating a query using the constant above, and returning the person if it matches the
