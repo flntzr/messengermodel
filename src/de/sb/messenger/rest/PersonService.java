@@ -20,6 +20,8 @@ import java.util.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 
+// immer nur id zurückgeben lassen aus db und dann über find die entities laden
+
 @Path("people")
 public class PersonService {
 
@@ -34,15 +36,18 @@ public class PersonService {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManagerLife = RestJpaLifecycleProvider.entityManager("messenger");
 
-		TypedQuery<Person> query = messengerManagerLife.createQuery("SELECT p FROM Person p WHERE "
+		// TODO: query result offset(setfirstreslut) und länge(setmaxresult), timestamp bound
+		// query als string static
+		// order by rausschmeißen
+
+		TypedQuery<Person> query = messengerManagerLife.createQuery("SELECT p.identity FROM Person p WHERE "
 				+ "(:givenName is null OR p.name.given = :givenName) AND "
 				+ "(:familyName is null or p.name.family = :familyName) AND " 
 				+ "(:mail IS null OR p.email = :mail) AND "
 				+ "(:street IS null OR p.address.street = :street) AND "
 				+ "(:postcode IS null OR p.address.postcode = :postcode) AND"
 				+ "(:city IS null OR p.address.city = :city) AND"
-				+ "(:group IS null OR p.group = :group)"
-				+ " ORDER BY p.name.family, p.name.given, p.email",
+				+ "(:group IS null OR p.group = :group)",
 				Person.class);
 		List<Person> results = query
 				.setParameter("mail", mail)
@@ -56,6 +61,9 @@ public class PersonService {
 		if (results.isEmpty()) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
+
+		//results.sort(Comparator.comparing(Person::getName::getFirst).thenComparing(Person::getName::getGiven).thenComparing(Person::getMail));
+		// für jede id die Person laden über messengerManager.find()
 		return results;
 	}
 	
@@ -67,7 +75,7 @@ public class PersonService {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
-		Person person = messengerManager.find(Person.class, identity);
+		final Person person = messengerManager.find(Person.class, identity);
 		if (person == null) {
 			throw new ClientErrorException(NOT_FOUND);
 		}
@@ -81,21 +89,23 @@ public class PersonService {
 		return Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 	}
 
+	//TODO: set passwort
 	@PUT
 	@Consumes( {APPLICATION_JSON, APPLICATION_XML} )
-	public long createPerson(@HeaderParam("Authorization") final String authentication, @NotNull final Person person) {
+	@Produces(TEXT_PLAIN)
+	public long updatePerson(@HeaderParam("Authorization") final String authentication, @NotNull @Valid final Person person) {
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		if(requester.getGroup() != Group.ADMIN){
+		if(requester.getIdentity() != person.getIdentity() && requester.getGroup() != Group.ADMIN){
 			throw new NotAuthorizedException("Basic");
 		}
 
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person newPerson;
-		final boolean insert = person.getIdentity() == 0;
+		final boolean insertMode = person.getIdentity() == 0;
 
-		if (insert) {
+		if (insertMode) {
 			Document avatar = messengerManager.find(Document.class, 1L);
 			newPerson = new Person(avatar);
 		} else {
@@ -108,18 +118,18 @@ public class PersonService {
 		newPerson.getAddress().setStreet(person.getAddress().getStreet());
 		newPerson.getName().setFamily(person.getName().getFamily());
 		newPerson.getName().setGiven(person.getName().getGiven());
+		// passwort feld
+
+
+		if (insertMode) {
+			messengerManager.persist(newPerson);
+		} else {
+			messengerManager.flush();
+		}
 
 		try {
-			if (insert) {
-				messengerManager.persist(newPerson);
-			} else {
-				messengerManager.flush();
-			}
 			messengerManager.getTransaction().commit();
-		} catch (Exception e){
-			e.printStackTrace();
 		} finally {
-//			messengerManager.getTransaction().rollback();
 			messengerManager.getTransaction().begin();
 		}
 		return newPerson.getIdentity();
@@ -128,28 +138,25 @@ public class PersonService {
 	@GET
 	@Path("{identity}/peopleObserving")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
-	public List<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+	public Collection<Person> getPeopleObserving(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person person = messengerManager.find(Person.class, identity);
-		if(person == null || person.getPeopleObserving().isEmpty())
+		if(person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p FROM Person p WHERE "
+		/*TypedQuery<Person> queryPeopleObeserving = messengerManager.createQuery("SELECT p FROM Person p WHERE "
 						+ "(p.identity in :peopleObserving)"
 						+ "ORDER BY p.name.family, p.name.given, p.email",
 				Person.class);
 
-		Set<Long> observingIDs = new HashSet<>();
+		Set<Long> observingIDs = new HashSet<>();*/
 
-		person.getPeopleObserving().forEach(currentPerson -> observingIDs.add(currentPerson.getIdentity()));
+		Set<Person> peopleObserving = person.getPeopleObserving();
 
-		List<Person> sortedPeopleObserving = queryPeopleObeserving.setParameter("peopleObserving", observingIDs).getResultList();
+		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(peopleObserving);
 
-		if (sortedPeopleObserving == null) {
-			throw new ClientErrorException(NOT_FOUND);
-		}
 		return sortedPeopleObserving;
 
 	}
@@ -164,6 +171,11 @@ public class PersonService {
 			) {
 
 
+		// TODO: abfrage über entity
+		// TODO: drei teilmengen: welche hinzu, welche weg, welche sich ändern
+		// TODO: peopleObserved ändern (addAll removeAll)
+		// TODO: commit
+		// TODO: second level cache (evict)
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		if(requester.getGroup() != Group.ADMIN){
 			throw new NotAuthorizedException("Basic");
@@ -203,8 +215,6 @@ public class PersonService {
 		// refresh 2nd level cache for observer and observed
 		try{
 			tx.commit();
-		} catch (Exception e){
-			System.err.println(e);
 		} finally {
 			tx.rollback();
 			tx.begin();
@@ -217,22 +227,21 @@ public class PersonService {
 		cache.evict(Person.class, observer.getIdentity());
 		observed.forEach((o) -> cache.evict(Person.class, o.getIdentity()));
 
-
 	}
 
 	@GET
 	@Path("{identity}/peopleObserved")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
-	public List<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+	public Collection<Person> getPeopleObserved(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person person = messengerManager.find(Person.class, identity);
 
-		if(person == null || person.getPeopleObserved().isEmpty())
+		if(person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p FROM Person p WHERE "
+		/*TypedQuery<Person> queryPeopleObeserved = messengerManager.createQuery("SELECT p FROM Person p WHERE "
 						+ "(p.identity in :peopleObserved)"
 						+  "ORDER BY p.name.family, p.name.given, p.email",
 				Person.class);
@@ -241,33 +250,28 @@ public class PersonService {
 
 		person.getPeopleObserved().forEach(currentPerson -> observedIDs.add(currentPerson.getIdentity()));
 
-		List<Person> sortedPeopleObserved = queryPeopleObeserved.setParameter("peopleObserved", observedIDs).getResultList();
+		List<Person> sortedPeopleObserved = queryPeopleObeserved.setParameter("peopleObserved", observedIDs).getResultList();*/
 
-		if (sortedPeopleObserved.size() == 0 || sortedPeopleObserved == null) {
-			throw new ClientErrorException(NOT_FOUND);
-		}
+		Set<Person> peopleObs = person.getPeopleObserved();
 
-		return sortedPeopleObserved;
+		SortedSet<Person> sortedPeoplsObs = new TreeSet<>(peopleObs);
+
+		return sortedPeoplsObs;
 	}
 
 	@GET
 	@Path("{identity}/messagesAuthored")
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
-	public List<Message> getMessagesAuthored(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
+	public Collection<Message> getMessagesAuthored(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
+		final Person person = messengerManager.find(Person.class, identity);
 
-		TypedQuery<Message> queryMessagesAuthored = messengerManager.createQuery("SELECT m FROM Message m WHERE "
-						+ "m.author.identity = :identity "
-						+ "ORDER BY m.identity",
-				Message.class);
+		Set<Message> messages = person.getMessagesAuthored();
 
-		List<Message> messages = queryMessagesAuthored.setParameter("identity", identity).getResultList();
+		SortedSet<Message> sortedMessages = new TreeSet<>(messages);
 
-		if(messages.isEmpty())
-			throw new ClientErrorException(NOT_FOUND);
-
-		return messages;
+		return sortedMessages;
 	}
 
 
@@ -277,7 +281,7 @@ public class PersonService {
 	public Response getAvatar(@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity){
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
-		Person person = messengerManager.find(Person.class, identity);
+		final Person person = messengerManager.find(Person.class, identity);
 
 		if(person == null){
 			throw new ClientErrorException(NOT_FOUND);
@@ -287,6 +291,7 @@ public class PersonService {
 	}
 
 
+	// byte array statt inputstream
 	@PUT
 	@Path("{identity}/avatar")
 	@Consumes(WILDCARD)
@@ -294,6 +299,7 @@ public class PersonService {
 						  @HeaderParam("Content-Type") final String contentType,
 						  final InputStream content,
 						  @PathParam("identity") final long identity) throws IOException {
+
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		if(requester.getGroup() != Group.ADMIN){
 			throw new NotAuthorizedException("Basic");
@@ -311,6 +317,7 @@ public class PersonService {
 
 		Document newDocument = null;
 
+		// leerer inputstream
 		if(content == null){
 			newDocument = messengerManager.find(Document.class, 1L);
 		} else {
@@ -325,6 +332,7 @@ public class PersonService {
 
 			// check if document with same content hash exists in database
 			// if then take that and set is as the persons avatar (newDocument[0])
+			// TODO: query nach hash
 			for (Document current : documents) {
 				if(Arrays.equals(newContentHash, current.getContentHash())){
 					newDocument = current;
@@ -337,12 +345,11 @@ public class PersonService {
 				newDocument = new Document();
 				newDocument.setContent(contentBuffer.toByteArray());
 				newDocument.setContentType(contentType);
+
+				messengerManager.persist(newDocument);
 				try{
-					messengerManager.persist(newDocument);
 					// have to commit otherwise updating the person fails because document id not updated
 					messengerManager.getTransaction().commit();
-				} catch (Exception e){
-					e.printStackTrace();
 				} finally {
 					messengerManager.getTransaction().begin();
 				}
@@ -352,10 +359,7 @@ public class PersonService {
 		// update persons avatar
 		person.setAvatar(newDocument);
 		try{
-			messengerManager.merge(person);
 			messengerManager.getTransaction().commit();
-		} catch (Exception e){
-			e.printStackTrace();
 		} finally {
 			messengerManager.getTransaction().begin();
 		}
