@@ -26,11 +26,19 @@ import static javax.ws.rs.core.Response.Status.*;
 @Path("people")
 public class PersonService {
 
-	private static final EntityManagerFactory messengerFactory = Persistence.createEntityManagerFactory("messenger");
+	private static final EntityManagerFactory MESSENGER_FACTORY = Persistence.createEntityManagerFactory("messenger");
+	private static final String SELECT_PERSONS_QUERY = "SELECT p.identity FROM Person p WHERE "
+			+ "(:givenName is null OR p.name.given = :givenName) AND "
+			+ "(:familyName is null or p.name.family = :familyName) AND " + "(:mail IS null OR p.email = :mail) AND "
+			+ "(:street IS null OR p.address.street = :street) AND "
+			+ "(:postcode IS null OR p.address.postcode = :postcode) AND"
+			+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group)";
+	private static final Comparator<Person> PERSON_COMPARATOR = Comparator.comparing((Person p) -> p.getName().getFamily())
+			.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail);
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
-	public List<Person> queryPersons(@HeaderParam("Authorization") final String authentication,
+	public Collection<Person> queryPersons(@HeaderParam("Authorization") final String authentication,
 			@QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
 			@QueryParam("mail") final String mail, @QueryParam("street") final String street,
 			@QueryParam("postcode") final String postcode, @QueryParam("city") final String city,
@@ -40,28 +48,18 @@ public class PersonService {
 
 		// TODO: query result offset(setfirstreslut) und länge(setmaxresult), timestamp
 		// bound
-		// query als string static
-		// order by rausschmeißen
 
-		TypedQuery<Person> query = messengerManagerLife.createQuery(
-				"SELECT p.identity FROM Person p WHERE " + "(:givenName is null OR p.name.given = :givenName) AND "
-						+ "(:familyName is null or p.name.family = :familyName) AND "
-						+ "(:mail IS null OR p.email = :mail) AND "
-						+ "(:street IS null OR p.address.street = :street) AND "
-						+ "(:postcode IS null OR p.address.postcode = :postcode) AND"
-						+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group)",
-				Person.class);
-		List<Person> results = query.setParameter("mail", mail).setParameter("givenName", givenName)
+		TypedQuery<Long> query = messengerManagerLife.createQuery(PersonService.SELECT_PERSONS_QUERY, Long.class);
+		List<Long> results = query.setParameter("mail", mail).setParameter("givenName", givenName)
 				.setParameter("familyName", familyName).setParameter("street", street)
 				.setParameter("postcode", postcode).setParameter("city", city).setParameter("group", group)
 				.getResultList();
-		if (results.isEmpty()) {
-			throw new ClientErrorException(NOT_FOUND);
-		}
+		SortedSet<Person> sortedPersons = new TreeSet<>(PersonService.PERSON_COMPARATOR);
 
-		// results.sort(Comparator.comparing(Person::getName::getFirst).thenComparing(Person::getName::getGiven).thenComparing(Person::getMail));
-		// für jede id die Person laden über messengerManager.find()
-		return results;
+		for (long id : results) {
+			sortedPersons.add(messengerManagerLife.find(Person.class, id));
+		}
+		return sortedPersons;
 	}
 
 	@GET
@@ -145,10 +143,7 @@ public class PersonService {
 		if (person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(Comparator
-				.comparing((Person p) -> p.getName().getFamily())
-				.thenComparing((Person p) -> p.getName().getGiven())
-				.thenComparing(Person::getMail));
+		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(PersonService.PERSON_COMPARATOR);
 		sortedPeopleObserving.addAll(person.getPeopleObserving());
 
 		return sortedPeopleObserving;
@@ -196,7 +191,7 @@ public class PersonService {
 			messengerManager.getTransaction().begin();
 		}
 
-		Cache cache = messengerFactory.getCache();
+		Cache cache = MESSENGER_FACTORY.getCache();
 		for (long id : joinedSet) {
 			cache.evict(Person.class, id);
 		}
@@ -215,10 +210,7 @@ public class PersonService {
 		if (person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		SortedSet<Person> sortedPeopleObserved = new TreeSet<>(Comparator
-				.comparing((Person p) -> p.getName().getFamily())
-				.thenComparing((Person p) -> p.getName().getGiven())
-				.thenComparing(Person::getMail));
+		SortedSet<Person> sortedPeopleObserved = new TreeSet<>(PersonService.PERSON_COMPARATOR);
 		sortedPeopleObserved.addAll(person.getPeopleObserved());
 
 		return sortedPeopleObserved;
