@@ -145,21 +145,13 @@ public class PersonService {
 		if (person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		/*
-		 * TypedQuery<Person> queryPeopleObeserving =
-		 * messengerManager.createQuery("SELECT p FROM Person p WHERE " +
-		 * "(p.identity in :peopleObserving)" +
-		 * "ORDER BY p.name.family, p.name.given, p.email", Person.class);
-		 * 
-		 * Set<Long> observingIDs = new HashSet<>();
-		 */
-
-		Set<Person> peopleObserving = person.getPeopleObserving();
-
-		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(peopleObserving);
+		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(Comparator
+				.comparing((Person p) -> p.getName().getFamily())
+				.thenComparing((Person p) -> p.getName().getGiven())
+				.thenComparing(Person::getMail));
+		sortedPeopleObserving.addAll(person.getPeopleObserving());
 
 		return sortedPeopleObserving;
-
 	}
 
 	@PUT
@@ -205,8 +197,8 @@ public class PersonService {
 		}
 
 		Cache cache = messengerFactory.getCache();
-		for (long id: joinedSet) {
-			cache.evict(Person.class, id);			
+		for (long id : joinedSet) {
+			cache.evict(Person.class, id);
 		}
 	}
 
@@ -223,27 +215,13 @@ public class PersonService {
 		if (person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		/*
-		 * TypedQuery<Person> queryPeopleObeserved =
-		 * messengerManager.createQuery("SELECT p FROM Person p WHERE " +
-		 * "(p.identity in :peopleObserved)" +
-		 * "ORDER BY p.name.family, p.name.given, p.email", Person.class);
-		 * 
-		 * Set<Long> observedIDs = new HashSet<>();
-		 * 
-		 * person.getPeopleObserved().forEach(currentPerson ->
-		 * observedIDs.add(currentPerson.getIdentity()));
-		 * 
-		 * List<Person> sortedPeopleObserved =
-		 * queryPeopleObeserved.setParameter("peopleObserved",
-		 * observedIDs).getResultList();
-		 */
+		SortedSet<Person> sortedPeopleObserved = new TreeSet<>(Comparator
+				.comparing((Person p) -> p.getName().getFamily())
+				.thenComparing((Person p) -> p.getName().getGiven())
+				.thenComparing(Person::getMail));
+		sortedPeopleObserved.addAll(person.getPeopleObserved());
 
-		Set<Person> peopleObs = person.getPeopleObserved();
-
-		SortedSet<Person> sortedPeoplsObs = new TreeSet<>(peopleObs);
-
-		return sortedPeoplsObs;
+		return sortedPeopleObserved;
 	}
 
 	@GET
