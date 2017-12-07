@@ -7,19 +7,17 @@ import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
 import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
-import javax.ejb.RemoveException;
 import javax.persistence.*;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 import static javax.ws.rs.core.MediaType.*;
-import static javax.ws.rs.core.Response.Status.*;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.OK;
 
 // immer nur id zurückgeben lassen aus db und dann über find die entities laden
 
@@ -32,27 +30,32 @@ public class PersonService {
 			+ "(:familyName is null or p.name.family = :familyName) AND " + "(:mail IS null OR p.email = :mail) AND "
 			+ "(:street IS null OR p.address.street = :street) AND "
 			+ "(:postcode IS null OR p.address.postcode = :postcode) AND"
-			+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group)";
+			+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group) AND "
+			+ "(:creationTimestampLower IS null OR p.creationTimestamp >= :creationTimestampLower) AND"
+			+ "(:creationTimestampUpper IS null OR p.creationTimestamp <= :creationTimestampUpper)";
 	private static final Comparator<Person> PERSON_COMPARATOR = Comparator.comparing((Person p) -> p.getName().getFamily())
 			.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail);
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public Collection<Person> queryPersons(@HeaderParam("Authorization") final String authentication,
-			@QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
-			@QueryParam("mail") final String mail, @QueryParam("street") final String street,
-			@QueryParam("postcode") final String postcode, @QueryParam("city") final String city,
-			@QueryParam("group") final Group group) {
+										   @QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
+										   @QueryParam("mail") final String mail, @QueryParam("street") final String street,
+										   @QueryParam("postcode") final String postcode, @QueryParam("city") final String city,
+										   @QueryParam("group") final Group group, @QueryParam("resultOffset") final int resultOffset,
+										   @QueryParam("maxResultLength") int maxResultLength, @QueryParam("creationTimestampLower") final long creationTimestampLower,
+										   @QueryParam("creationTimestampUpper") final long creationTimestampUpper) {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManagerLife = RestJpaLifecycleProvider.entityManager("messenger");
 
-		// TODO: query result offset(setfirstreslut) und länge(setmaxresult), timestamp
-		// bound
+		// how to handle that? ask baumeister
+		if(maxResultLength == 0) maxResultLength = 100;
 
 		TypedQuery<Long> query = messengerManagerLife.createQuery(PersonService.SELECT_PERSONS_QUERY, Long.class);
 		List<Long> results = query.setParameter("mail", mail).setParameter("givenName", givenName)
 				.setParameter("familyName", familyName).setParameter("street", street)
 				.setParameter("postcode", postcode).setParameter("city", city).setParameter("group", group)
+				.setParameter("creationTimestampLower", creationTimestampLower).setParameter("creationTimestampUpper", creationTimestampUpper).setFirstResult(resultOffset).setMaxResults(maxResultLength)
 				.getResultList();
 		SortedSet<Person> sortedPersons = new TreeSet<>(PersonService.PERSON_COMPARATOR);
 
@@ -93,7 +96,7 @@ public class PersonService {
 			@NotNull @Valid final Person person) {
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		if (requester.getIdentity() != person.getIdentity() && requester.getGroup() != Group.ADMIN) {
+		if (requester.getIdentity() != person.getIdentity()) {
 			throw new NotAuthorizedException("Basic");
 		}
 
@@ -227,9 +230,7 @@ public class PersonService {
 
 		Set<Message> messages = person.getMessagesAuthored();
 
-		SortedSet<Message> sortedMessages = new TreeSet<>(messages);
-
-		return sortedMessages;
+		return new TreeSet<>(messages);
 	}
 
 	@GET
