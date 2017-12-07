@@ -291,13 +291,12 @@ public class PersonService {
 	}
 
 
-	// byte array statt inputstream
 	@PUT
 	@Path("{identity}/avatar")
 	@Consumes(WILDCARD)
 	public void putAvatar(@HeaderParam("Authorization") final String authentication,
 						  @HeaderParam("Content-Type") final String contentType,
-						  final InputStream content,
+						  final byte[] content,
 						  @PathParam("identity") final long identity) throws IOException {
 
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
@@ -311,43 +310,34 @@ public class PersonService {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 
-		TypedQuery<Document> queryDocuments = messengerManager.createQuery("SELECT d FROM Document d", Document.class);
-
-		List<Document> documents = queryDocuments.getResultList();
-
 		Document newDocument = null;
 
-		// leerer inputstream
+		// leerer byte array
 		if(content == null){
 			newDocument = messengerManager.find(Document.class, 1L);
 		} else {
-			int nRead = 0;
-			ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream();
-			byte[] contentBytes = new byte[1000];
-			while((nRead = content.read(contentBytes, 0, contentBytes.length)) != -1){
-				contentBuffer.write(contentBytes, 0, nRead);
-			}
-			byte[] newContentHash = Document.mediaHash(contentBuffer.toByteArray());
-			boolean docSet = false;
+			byte[] newContentHash = Document.mediaHash(content);
 
-			// check if document with same content hash exists in database
-			// if then take that and set is as the persons avatar (newDocument[0])
-			// TODO: query nach hash
-			for (Document current : documents) {
-				if(Arrays.equals(newContentHash, current.getContentHash())){
-					newDocument = current;
-					docSet = true;
-				}
+			TypedQuery<Document> queryDocuments = messengerManager.createQuery("SELECT d FROM Document d WHERE d.contentHash = :contentHash", Document.class);
+			queryDocuments.setParameter("contentHash", newContentHash);
+
+			Document document = null;
+			try {
+				document = queryDocuments.getSingleResult();
+			} catch (Exception e){
+				System.err.println("Document not found, creating new one...");
 			}
 
-			// if send content hash not in database, create new document and save it in database
-			if(!docSet){
+			if(document != null){
+				newDocument = document;
+			} else {
+				// if send content hash not in database, create new document and save it in database
 				newDocument = new Document();
-				newDocument.setContent(contentBuffer.toByteArray());
+				newDocument.setContent(content);
 				newDocument.setContentType(contentType);
 
 				messengerManager.persist(newDocument);
-				try{
+				try {
 					// have to commit otherwise updating the person fails because document id not updated
 					messengerManager.getTransaction().commit();
 				} finally {
