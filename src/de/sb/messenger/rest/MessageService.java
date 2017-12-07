@@ -12,8 +12,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.ws.rs.*;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -28,47 +27,60 @@ public class MessageService {
     // array statt liste (besser bei Response)
     // collection als rückgabewert
 
+    private static final String SELECT_MESSAGES_QUERY = "SELECT m.identity FROM Message m WHERE "
+            + "(:authorReference = 0 OR m.author.identity = :authorReference) AND "
+            + "(:subjectReference = 0 OR m.subject.identity = :subjectReference) AND "
+            + "(:body IS null OR m.body LIKE :body) AND "
+            + "(:creationTimestampLower = 0 OR m.creationTimestamp >= :creationTimestampLower) AND"
+            + "(:creationTimestampUpper = 0 OR m.creationTimestamp <= :creationTimestampUpper)";
+
     @GET
     @Produces({APPLICATION_JSON, APPLICATION_XML})
-    public List<Message> getMessages(@HeaderParam("Authorization") final String authentication){
-        // TODO: filter query: resultoffset und -länge, creationTimestamp Bound (lower upper), body fragment (like), subjectRef, authorRef
-        // -> sowie bei Person GET
+    public Collection<Message> getMessages(@HeaderParam("Authorization") final String authentication,
+                                           @QueryParam("authorReference") final long authorReference, @QueryParam("subjectReference") final long subjectReference,
+                                           @QueryParam("body") @Size(min = 0, max = 4093) final String body, @QueryParam("resultOffset") final int resultOffset,
+                                           @QueryParam("maxResultLength") int maxResultLength, @QueryParam("creationTimestampLower") final long creationTimestampLower,
+                                           @QueryParam("creationTimestampUpper") final long creationTimestampUpper){
+
         Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
         final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
-        final TypedQuery<Message> queryMessages = messengerManager.createQuery("SELECT m FROM Message m", Message.class);
-        final List<Message> messages = queryMessages.getResultList();
 
-        // leere liste ist auch ein Ergebnis
-        /*if(messages.isEmpty())
-            throw new ClientErrorException(NOT_FOUND);*/
+        // how to handle that? ask baumeister
+        if(maxResultLength == 0) maxResultLength = 100;
 
-        messages.sort(Comparator.naturalOrder());
+        final TypedQuery<Long> queryMessageIds = messengerManager.createQuery(SELECT_MESSAGES_QUERY, Long.class);
+        final List<Long> messagesIds = queryMessageIds.setParameter("authorReference", authorReference).setParameter("subjectReference", subjectReference)
+                .setParameter("body", body).setParameter("creationTimestampLower", creationTimestampLower).setParameter("creationTimestampUpper", creationTimestampUpper).setFirstResult(resultOffset).setMaxResults(maxResultLength)
+                .getResultList();
 
-        return messages;
+
+        SortedSet<Message> sortedMessages = new TreeSet<>(Comparator.naturalOrder());
+
+
+        for (long id : messagesIds) {
+            sortedMessages.add(messengerManager.find(Message.class, id));
+        }
+
+        return sortedMessages;
     }
 
     @PUT
     @Consumes({APPLICATION_FORM_URLENCODED})
     public long createMessage(@HeaderParam("Authorization") final String authentication,
-                              @FormParam("body") @NotNull @Size(min = 1, max = 4093) final String body, @FormParam("authorReference") final long authorReference,
+                              @FormParam("body") @NotNull @Size(min = 1, max = 4093) final String body,
                               @FormParam("subjectReference") final long subjectReference){
 
-        // TODO: requester als author setzen, parameter weg
         final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
-        if(requester.getIdentity() != authorReference){
-            throw new NotAuthorizedException("Basic");
-        }
         final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
-        // author kann weg
-        Person author = messengerManager.find(Person.class, authorReference);
         BaseEntity subject = messengerManager.find(BaseEntity.class, subjectReference);
 
-        if(author == null || subject == null || body == null){
+        if(subject == null || body == null){
             throw new ClientErrorException(BAD_REQUEST);
         }
 
-        Message newMessage = new Message(author, subject);
+        // requester is author
+        Message newMessage = new Message(requester, subject);
         newMessage.setBody(body);
 
         messengerManager.persist(newMessage);
@@ -81,7 +93,7 @@ public class MessageService {
 
         // evict author and subject from second level cache
         final Cache cache = messengerManager.getEntityManagerFactory().getCache();
-        cache.evict(Person.class, author.getIdentity());
+        cache.evict(Person.class, requester.getIdentity());
         cache.evict(BaseEntity.class, subject.getIdentity());
 
         return newMessage.getIdentity();
