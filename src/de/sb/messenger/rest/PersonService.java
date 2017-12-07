@@ -19,8 +19,6 @@ import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 
-// immer nur id zurückgeben lassen aus db und dann über find die entities laden
-
 @Path("people")
 public class PersonService {
 

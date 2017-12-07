@@ -1,31 +1,26 @@
 package de.sb.messenger.rest;
 
 import de.sb.messenger.persistence.BaseEntity;
-import de.sb.messenger.persistence.Group;
 import de.sb.messenger.persistence.Message;
 import de.sb.messenger.persistence.Person;
 import de.sb.toolbox.net.RestCredentials;
 import de.sb.toolbox.net.RestJpaLifecycleProvider;
 
-import javax.persistence.*;
+import javax.persistence.Cache;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.ws.rs.*;
-
 import java.util.*;
 
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_ACCEPTABLE;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 @Path("messages")
 @Consumes(APPLICATION_FORM_URLENCODED)
 public class MessageService {
-
-
-    // array statt liste (besser bei Response)
-    // collection als rückgabewert
 
     private static final String SELECT_MESSAGES_QUERY = "SELECT m.identity FROM Message m WHERE "
             + "(:authorReference = 0 OR m.author.identity = :authorReference) AND "
