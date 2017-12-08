@@ -86,7 +86,6 @@ public class PersonService {
 		return Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 	}
 
-	// TODO: set passwort
 	@PUT
 	@Consumes({ APPLICATION_JSON, APPLICATION_XML })
 	@Produces(TEXT_PLAIN)
