@@ -29,8 +29,8 @@ public class PersonService {
 			+ "(:street IS null OR p.address.street = :street) AND "
 			+ "(:postcode IS null OR p.address.postcode = :postcode) AND"
 			+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group) AND "
-			+ "(:creationTimestampLower IS null OR p.creationTimestamp >= :creationTimestampLower) AND"
-			+ "(:creationTimestampUpper IS null OR p.creationTimestamp <= :creationTimestampUpper)";
+			+ "(:creationTimestampLower = 0 OR p.creationTimestamp >= :creationTimestampLower) AND"
+			+ "(:creationTimestampUpper = 0 OR p.creationTimestamp <= :creationTimestampUpper)";
 	private static final Comparator<Person> PERSON_COMPARATOR = Comparator.comparing((Person p) -> p.getName().getFamily())
 			.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail);
 
@@ -90,12 +90,15 @@ public class PersonService {
 	@PUT
 	@Consumes({ APPLICATION_JSON, APPLICATION_XML })
 	@Produces(TEXT_PLAIN)
-	public long updatePerson(@HeaderParam("Authorization") final String authentication,
-			@NotNull @Valid final Person person) {
+	public long updatePerson(@HeaderParam("Authorization") final String authentication, @HeaderParam("password") final String password, @Valid @NotNull final Person person) {
+
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		if (requester.getIdentity() != person.getIdentity()) {
-			throw new NotAuthorizedException("Basic");
+		// gives back 403, if requester is not ADMIN and does not alter himself or if he wants to change his group to ADMIN
+		if(requester.getGroup() != Group.ADMIN){
+			if (requester.getIdentity() != person.getIdentity() || person.getGroup() == Group.ADMIN) {
+				throw new ClientErrorException(403);
+			}
 		}
 
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
@@ -109,6 +112,11 @@ public class PersonService {
 		} else {
 			newPerson = messengerManager.find(Person.class, person.getIdentity());
 		}
+
+		if(password != null){
+			newPerson.setPasswordHash(Person.passwordHash(password));
+		}
+
 		newPerson.setMail(person.getMail());
 		newPerson.setGroup(person.getGroup());
 		newPerson.getAddress().setCity(person.getAddress().getCity());
@@ -116,7 +124,6 @@ public class PersonService {
 		newPerson.getAddress().setStreet(person.getAddress().getStreet());
 		newPerson.getName().setFamily(person.getName().getFamily());
 		newPerson.getName().setGiven(person.getName().getGiven());
-		// passwort feld
 
 		if (insertMode) {
 			messengerManager.persist(newPerson);
@@ -126,6 +133,8 @@ public class PersonService {
 
 		try {
 			messengerManager.getTransaction().commit();
+		} catch (Exception e) {
+			e.printStackTrace(); // throws CloneNotSupportedException, but still writes person into database
 		} finally {
 			messengerManager.getTransaction().begin();
 		}
