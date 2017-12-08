@@ -102,7 +102,7 @@ public class Person extends BaseEntity {
 	}
 
 	protected Person() {
-		this(null);
+		this(new Document());
 	}
 
 	public String getMail() {
