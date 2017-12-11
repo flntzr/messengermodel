@@ -82,7 +82,10 @@ public class MessageService {
 
         try {
             messengerManager.getTransaction().commit();
-        } finally {
+        } catch (Exception e){
+            e.printStackTrace(); // CloneNotSupportedException......
+        }
+        finally {
             messengerManager.getTransaction().begin();
         }
 
