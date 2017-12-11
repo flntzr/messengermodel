@@ -90,7 +90,7 @@ public class EntityService {
 	public void deleteEntity (@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 		if (requester.getGroup() != ADMIN) throw new ClientErrorException(FORBIDDEN);
 		messengerManager.getEntityManagerFactory().getCache().evict(BaseEntity.class, identity);
 
@@ -100,12 +100,12 @@ public class EntityService {
 		messengerManager.remove(entity);
 
 		try {
-			messengerManager.getTransaction().begin();
+			//messengerManager.getTransaction().begin();
 			messengerManager.getTransaction().commit();
 		} catch (final RollbackException exception) {
 			throw new ClientErrorException(CONFLICT);
 		} finally {
-			//messengerManager.getTransaction().begin();
+			messengerManager.getTransaction().begin();
  		}
 	}
 
@@ -130,7 +130,7 @@ public class EntityService {
 	public Message[] queryMessagesCaused (@HeaderParam("Authorization") final String authentication, @PathParam("identity") final long identity) {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		final EntityManager messengerManager = Persistence.createEntityManagerFactory("messenger").createEntityManager();
+		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 		final BaseEntity entity = messengerManager.find(BaseEntity.class, identity);
 		if (entity == null) throw new ClientErrorException(NOT_FOUND);
 		final Message[] messages = entity.getMessagesCaused().toArray(new Message[0]);
