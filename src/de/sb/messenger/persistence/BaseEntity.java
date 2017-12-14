@@ -51,7 +51,7 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 	public BaseEntity() {
 		this.identity = 0;
 		this.version = 1;
-		this.messagesCaused = Collections.emptySet();
+		this.messagesCaused = new HashSet<>();
 		this.creationTimestamp = System.currentTimeMillis();
 	}
 

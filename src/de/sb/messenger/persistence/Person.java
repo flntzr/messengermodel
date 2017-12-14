@@ -95,8 +95,8 @@ public class Person extends BaseEntity {
 		this.name = new Name();
 		this.address = new Address();
 		this.group = Group.USER;
-		this.messagesAuthored = Collections.emptySet();
-		this.peopleObserving = Collections.emptySet();
+		this.messagesAuthored = new HashSet<>();
+		this.peopleObserving = new HashSet<>();
 		this.peopleObserved = new HashSet<>();
 		this.avatar = avatar;
 	}
