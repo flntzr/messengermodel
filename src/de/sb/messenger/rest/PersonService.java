@@ -22,7 +22,6 @@ import static javax.ws.rs.core.Response.Status.OK;
 @Path("people")
 public class PersonService {
 
-	private static final EntityManagerFactory MESSENGER_FACTORY = Persistence.createEntityManagerFactory("messenger");
 	private static final String SELECT_PERSONS_QUERY = "SELECT p.identity FROM Person p WHERE "
 			+ "(:givenName is null OR p.name.given = :givenName) AND "
 			+ "(:familyName is null or p.name.family = :familyName) AND " + "(:mail IS null OR p.email = :mail) AND "
@@ -209,7 +208,7 @@ public class PersonService {
 			messengerManager.getTransaction().begin();
 		}
 
-		Cache cache = MESSENGER_FACTORY.getCache();
+		Cache cache = messengerManager.getEntityManagerFactory().getCache();
 		for (long id : idsToEvict) {
 			cache.evict(Person.class, id);
 		}
