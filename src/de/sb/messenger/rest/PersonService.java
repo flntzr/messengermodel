@@ -31,30 +31,34 @@ public class PersonService {
 			+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group) AND "
 			+ "(:creationTimestampLower = 0 OR p.creationTimestamp >= :creationTimestampLower) AND"
 			+ "(:creationTimestampUpper = 0 OR p.creationTimestamp <= :creationTimestampUpper)";
-	private static final Comparator<Person> PERSON_COMPARATOR = Comparator.comparing((Person p) -> p.getName().getFamily())
-			.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail);
+	private static final Comparator<Person> PERSON_COMPARATOR = Comparator
+			.comparing((Person p) -> p.getName().getFamily()).thenComparing((Person p) -> p.getName().getGiven())
+			.thenComparing(Person::getMail);
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
 	public Collection<Person> queryPersons(@HeaderParam("Authorization") final String authentication,
-										   @QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
-										   @QueryParam("mail") final String mail, @QueryParam("street") final String street,
-										   @QueryParam("postcode") final String postcode, @QueryParam("city") final String city,
-										   @QueryParam("group") final Group group, @QueryParam("resultOffset") final int resultOffset,
-										   @QueryParam("maxResultLength") int maxResultLength, @QueryParam("creationTimestampLower") final long creationTimestampLower,
-										   @QueryParam("creationTimestampUpper") final long creationTimestampUpper) {
+			@QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
+			@QueryParam("mail") final String mail, @QueryParam("street") final String street,
+			@QueryParam("postcode") final String postcode, @QueryParam("city") final String city,
+			@QueryParam("group") final Group group, @QueryParam("resultOffset") final int resultOffset,
+			@QueryParam("maxResultLength") int maxResultLength,
+			@QueryParam("creationTimestampLower") final long creationTimestampLower,
+			@QueryParam("creationTimestampUpper") final long creationTimestampUpper) {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManagerLife = RestJpaLifecycleProvider.entityManager("messenger");
 
 		// how to handle that? ask baumeister
-		if(maxResultLength == 0) maxResultLength = 100;
+		if (maxResultLength == 0)
+			maxResultLength = 100;
 
 		TypedQuery<Long> query = messengerManagerLife.createQuery(PersonService.SELECT_PERSONS_QUERY, Long.class);
 		List<Long> results = query.setParameter("mail", mail).setParameter("givenName", givenName)
 				.setParameter("familyName", familyName).setParameter("street", street)
 				.setParameter("postcode", postcode).setParameter("city", city).setParameter("group", group)
-				.setParameter("creationTimestampLower", creationTimestampLower).setParameter("creationTimestampUpper", creationTimestampUpper).setFirstResult(resultOffset).setMaxResults(maxResultLength)
-				.getResultList();
+				.setParameter("creationTimestampLower", creationTimestampLower)
+				.setParameter("creationTimestampUpper", creationTimestampUpper).setFirstResult(resultOffset)
+				.setMaxResults(maxResultLength).getResultList();
 		SortedSet<Person> sortedPersons = new TreeSet<>(PersonService.PERSON_COMPARATOR);
 
 		for (long id : results) {
@@ -89,12 +93,14 @@ public class PersonService {
 	@PUT
 	@Consumes({ APPLICATION_JSON, APPLICATION_XML })
 	@Produces(TEXT_PLAIN)
-	public long updatePerson(@HeaderParam("Authorization") final String authentication, @HeaderParam("password") final String password, @Valid @NotNull final Person person) {
+	public long updatePerson(@HeaderParam("Authorization") final String authentication,
+			@HeaderParam("password") final String password, @Valid @NotNull final Person person) {
 
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
-		// gives back 403, if requester is not ADMIN and does not alter himself or if he wants to change his group to ADMIN
-		if(requester.getGroup() != Group.ADMIN){
+		// gives back 403, if requester is not ADMIN and does not alter himself or if he
+		// wants to change his group to ADMIN
+		if (requester.getGroup() != Group.ADMIN) {
 			if (requester.getIdentity() != person.getIdentity() || person.getGroup() == Group.ADMIN) {
 				throw new ClientErrorException(403);
 			}
@@ -112,7 +118,7 @@ public class PersonService {
 			newPerson = messengerManager.find(Person.class, person.getIdentity());
 		}
 
-		if(password != null){
+		if (password != null) {
 			newPerson.setPasswordHash(Person.passwordHash(password));
 		}
 
@@ -180,6 +186,7 @@ public class PersonService {
 		peopleObserved.forEach(p -> oldObserved.put(p.getIdentity(), p));
 		Set<Long> joinedSet = new HashSet<>(observedIDs);
 		joinedSet.addAll(oldObserved.keySet());
+		Set<Long> idsToEvict = new HashSet<>();
 		for (long id : joinedSet) {
 			Person oldPerson = oldObserved.get(id);
 			boolean inNewSet = observedIDs.contains(id);
@@ -188,9 +195,11 @@ public class PersonService {
 			} else if (oldPerson != null) {
 				// remove
 				peopleObserved.remove(oldPerson);
+				idsToEvict.add(id);
 			} else {
 				// add
 				peopleObserved.add(messengerManager.find(Person.class, id));
+				idsToEvict.add(id);
 			}
 		}
 
@@ -201,7 +210,7 @@ public class PersonService {
 		}
 
 		Cache cache = MESSENGER_FACTORY.getCache();
-		for (long id : joinedSet) {
+		for (long id : idsToEvict) {
 			cache.evict(Person.class, id);
 		}
 	}
@@ -258,14 +267,12 @@ public class PersonService {
 		return Response.status(OK).type(avatar.getContentType()).entity(avatar.getContent()).build();
 	}
 
-
 	@PUT
 	@Path("{identity}/avatar")
 	@Consumes(WILDCARD)
 	public void putAvatar(@HeaderParam("Authorization") final String authentication,
-						  @HeaderParam("Content-Type") final String contentType,
-						  final byte[] content,
-						  @PathParam("identity") final long identity) throws IOException {
+			@HeaderParam("Content-Type") final String contentType, final byte[] content,
+			@PathParam("identity") final long identity) throws IOException {
 
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		if (requester.getGroup() != Group.ADMIN) {
@@ -281,32 +288,35 @@ public class PersonService {
 		Document newDocument = null;
 
 		// leerer byte array
-		if(content == null){
+		if (content == null) {
 			newDocument = messengerManager.find(Document.class, 1L);
 		} else {
 			byte[] newContentHash = Document.mediaHash(content);
 
-			TypedQuery<Document> queryDocuments = messengerManager.createQuery("SELECT d FROM Document d WHERE d.contentHash = :contentHash", Document.class);
+			TypedQuery<Document> queryDocuments = messengerManager
+					.createQuery("SELECT d FROM Document d WHERE d.contentHash = :contentHash", Document.class);
 			queryDocuments.setParameter("contentHash", newContentHash);
 
 			Document document = null;
 			try {
 				document = queryDocuments.getSingleResult();
-			} catch (Exception e){
+			} catch (Exception e) {
 				System.err.println("Document not found, creating new one...");
 			}
 
-			if(document != null){
+			if (document != null) {
 				newDocument = document;
 			} else {
-				// if send content hash not in database, create new document and save it in database
+				// if send content hash not in database, create new document and save it in
+				// database
 				newDocument = new Document();
 				newDocument.setContent(content);
 				newDocument.setContentType(contentType);
 
 				messengerManager.persist(newDocument);
 				try {
-					// have to commit otherwise updating the person fails because document id not updated
+					// have to commit otherwise updating the person fails because document id not
+					// updated
 					messengerManager.getTransaction().commit();
 				} finally {
 					messengerManager.getTransaction().begin();
