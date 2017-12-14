@@ -234,6 +234,9 @@ public class PersonService {
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 		final Person person = messengerManager.find(Person.class, identity);
 
+		if (person == null)
+			throw new ClientErrorException(NOT_FOUND);
+
 		Set<Message> messages = person.getMessagesAuthored();
 
 		return new TreeSet<>(messages);
