@@ -20,6 +20,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -36,16 +37,20 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@XmlElement
 	private final long identity;
 
 	//@Version -> search in wiki: optimistic locking
 	@Column(nullable = false, updatable = true)
+	@XmlElement
 	private int version;
 
 	@Column(nullable = false, updatable = false)
+	@XmlElement
 	private final long creationTimestamp;
 
 	@OneToMany(mappedBy = "subject", cascade = CascadeType.REMOVE)
+	@XmlTransient
 	private final Set<Message> messagesCaused;
 
 	public BaseEntity() {
@@ -55,7 +60,6 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 		this.creationTimestamp = System.currentTimeMillis();
 	}
 
-	@XmlElement(name = "identity")
 	public long getIdentity() {
 		return identity;
 	}
@@ -68,12 +72,10 @@ public abstract class BaseEntity implements Comparable<BaseEntity> {
 		this.version = version;
 	}
 
-	@XmlElement(name = "creationTimestamp")
 	public long getCreationTimestamp() {
 		return creationTimestamp;
 	}
 
-	//@XmlElement -> Relationsfeld
 	public Set<Message> getMessagesCaused() {
 		return messagesCaused;
 	}

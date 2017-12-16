@@ -25,6 +25,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 import org.eclipse.persistence.annotations.CacheIndex;
 
@@ -36,7 +37,6 @@ public class Person extends BaseEntity {
 
 	private static final byte[] EMPTY_PASSWORD_HASH = Person.passwordHash("");
 
-	
 	@XmlElement
 	@Column(nullable = false, updatable = true)
 	@NotNull
@@ -48,6 +48,7 @@ public class Person extends BaseEntity {
 	@Column(nullable = false, updatable = true)
 	@NotNull
 	@Size(min = 32, max = 32)
+	@XmlTransient
 	private byte[] passwordHash;
 
 	@XmlElement
@@ -71,19 +72,23 @@ public class Person extends BaseEntity {
 	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "avatarReference", nullable = false, updatable = true)
+	@XmlTransient
 	private Document avatar;
 
 	@NotNull
 	@OneToMany(mappedBy = "author", cascade = CascadeType.REMOVE)
+	@XmlTransient
 	private final Set<Message> messagesAuthored;
 
 	@NotNull
 	@ManyToMany(mappedBy = "peopleObserved")
+	@XmlTransient
 	private final Set<Person> peopleObserving;
 
 	@NotNull
 	@ManyToMany
 	@JoinTable(schema = "messenger", name = "ObservationAssociation", joinColumns = @JoinColumn(name = "observingReference", nullable = false), inverseJoinColumns = @JoinColumn(name = "observedReference", nullable = false))
+	@XmlTransient
 	private final Set<Person> peopleObserved;
 
 	static public byte[] passwordHash(String password) {

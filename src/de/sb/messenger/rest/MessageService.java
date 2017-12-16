@@ -22,43 +22,6 @@ import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 @Consumes(APPLICATION_FORM_URLENCODED)
 public class MessageService {
 
-    private static final String SELECT_MESSAGES_QUERY = "SELECT m.identity FROM Message m WHERE "
-            + "(:authorReference = 0 OR m.author.identity = :authorReference) AND "
-            + "(:subjectReference = 0 OR m.subject.identity = :subjectReference) AND "
-            + "(:body IS null OR m.body LIKE :body) AND "
-            + "(:creationTimestampLower = 0 OR m.creationTimestamp >= :creationTimestampLower) AND"
-            + "(:creationTimestampUpper = 0 OR m.creationTimestamp <= :creationTimestampUpper)";
-
-    @GET
-    @Produces({APPLICATION_JSON, APPLICATION_XML})
-    public Collection<Message> getMessages(@HeaderParam("Authorization") final String authentication,
-                                           @QueryParam("authorReference") final long authorReference, @QueryParam("subjectReference") final long subjectReference,
-                                           @QueryParam("body") @Size(min = 0, max = 4093) final String body, @QueryParam("resultOffset") final int resultOffset,
-                                           @QueryParam("maxResultLength") int maxResultLength, @QueryParam("creationTimestampLower") final long creationTimestampLower,
-                                           @QueryParam("creationTimestampUpper") final long creationTimestampUpper){
-
-        Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
-        final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
-
-        // how to handle that? ask baumeister
-        if(maxResultLength == 0) maxResultLength = 100;
-
-        final TypedQuery<Long> queryMessageIds = messengerManager.createQuery(SELECT_MESSAGES_QUERY, Long.class);
-        final List<Long> messagesIds = queryMessageIds.setParameter("authorReference", authorReference).setParameter("subjectReference", subjectReference)
-                .setParameter("body", body).setParameter("creationTimestampLower", creationTimestampLower).setParameter("creationTimestampUpper", creationTimestampUpper).setFirstResult(resultOffset).setMaxResults(maxResultLength)
-                .getResultList();
-
-
-        SortedSet<Message> sortedMessages = new TreeSet<>(Comparator.naturalOrder());
-
-
-        for (long id : messagesIds) {
-            sortedMessages.add(messengerManager.find(Message.class, id));
-        }
-
-        return sortedMessages;
-    }
-
     @PUT
     @Consumes({APPLICATION_FORM_URLENCODED})
     public long createMessage(@HeaderParam("Authorization") final String authentication,

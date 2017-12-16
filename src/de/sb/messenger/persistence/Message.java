@@ -12,25 +12,24 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
  */
-@XmlRootElement(name="message")
+@XmlRootElement(name = "message")
 @Entity
 @Table(name = "Message", schema = "messenger")
 @PrimaryKeyJoinColumn(name = "messageIdentity")
 public class Message extends BaseEntity {
 
-
-
-	@XmlElement
+	@XmlTransient
 	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "authorReference", nullable = false, updatable = false)
 	private Person author;
 
-	@XmlElement
+	@XmlTransient
 	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "subjectReference", nullable = false, updatable = false)
@@ -67,9 +66,19 @@ public class Message extends BaseEntity {
 		this.body = body;
 	}
 
+	@XmlElement(name = "authorReference")
+	public long getAuthorReference() {
+		return this.author == null ? 0 : this.author.getIdentity();
+	}
+
+	@XmlElement(name = "subjectReference")
+	public long getSubjectReference() {
+		return this.subject == null ? 0 : this.subject.getIdentity();
+	}
+	
 	@Override
 	public boolean equals(Object obj) {
-		if(obj.getClass() == Message.class) {
+		if (obj.getClass() == Message.class) {
 
 			Message other = (Message) obj;
 			boolean sameAuthor = Objects.equals(this.getAuthor(), other.getAuthor());

@@ -12,6 +12,8 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -30,13 +32,10 @@ public class PersonService {
 			+ "(:city IS null OR p.address.city = :city) AND" + "(:group IS null OR p.group = :group) AND "
 			+ "(:creationTimestampLower = 0 OR p.creationTimestamp >= :creationTimestampLower) AND"
 			+ "(:creationTimestampUpper = 0 OR p.creationTimestamp <= :creationTimestampUpper)";
-	private static final Comparator<Person> PERSON_COMPARATOR = Comparator
-			.comparing((Person p) -> p.getName().getFamily()).thenComparing((Person p) -> p.getName().getGiven())
-			.thenComparing(Person::getMail);
 
 	@GET
 	@Produces({ APPLICATION_JSON, APPLICATION_XML })
-	public Collection<Person> queryPersons(@HeaderParam("Authorization") final String authentication,
+	public Collection<Person> queryPeople(@HeaderParam("Authorization") final String authentication,
 			@QueryParam("givenName") final String givenName, @QueryParam("familyName") final String familyName,
 			@QueryParam("mail") final String mail, @QueryParam("street") final String street,
 			@QueryParam("postcode") final String postcode, @QueryParam("city") final String city,
@@ -47,21 +46,23 @@ public class PersonService {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 		final EntityManager messengerManagerLife = RestJpaLifecycleProvider.entityManager("messenger");
 
-		// how to handle that? ask baumeister
-		if (maxResultLength == 0)
-			maxResultLength = 100;
-
 		TypedQuery<Long> query = messengerManagerLife.createQuery(PersonService.SELECT_PERSONS_QUERY, Long.class);
-		List<Long> results = query.setParameter("mail", mail).setParameter("givenName", givenName)
-				.setParameter("familyName", familyName).setParameter("street", street)
-				.setParameter("postcode", postcode).setParameter("city", city).setParameter("group", group)
-				.setParameter("creationTimestampLower", creationTimestampLower)
-				.setParameter("creationTimestampUpper", creationTimestampUpper).setFirstResult(resultOffset)
-				.setMaxResults(maxResultLength).getResultList();
-		SortedSet<Person> sortedPersons = new TreeSet<>(PersonService.PERSON_COMPARATOR);
+		query.setParameter("mail", mail).setParameter("givenName", givenName).setParameter("familyName", familyName)
+				.setParameter("street", street).setParameter("postcode", postcode).setParameter("city", city)
+				.setParameter("group", group).setParameter("creationTimestampLower", creationTimestampLower)
+				.setParameter("creationTimestampUpper", creationTimestampUpper);
+		if (resultOffset > 0)
+			query.setFirstResult(resultOffset);
+		if (maxResultLength > 0)
+			query.setMaxResults(maxResultLength);
+		List<Long> results = query.getResultList();
+		SortedSet<Person> sortedPersons = new TreeSet<>(Comparator.comparing((Person p) -> p.getName().getFamily())
+				.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail));
 
 		for (long id : results) {
-			sortedPersons.add(messengerManagerLife.find(Person.class, id));
+			Person person = messengerManagerLife.find(Person.class, id);
+			if (person != null)
+				sortedPersons.add(person);
 		}
 		return sortedPersons;
 	}
@@ -93,44 +94,44 @@ public class PersonService {
 	@Consumes({ APPLICATION_JSON, APPLICATION_XML })
 	@Produces(TEXT_PLAIN)
 	public long updatePerson(@HeaderParam("Authorization") final String authentication,
-			@HeaderParam("password") final String password, @Valid @NotNull final Person person) {
+			@HeaderParam("password") final String password, @Valid @NotNull final Person personTemplate) {
 
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
 
 		// gives back 403, if requester is not ADMIN and does not alter himself or if he
 		// wants to change his group to ADMIN
 		if (requester.getGroup() != Group.ADMIN) {
-			if (requester.getIdentity() != person.getIdentity() || person.getGroup() == Group.ADMIN) {
+			if (requester.getIdentity() != personTemplate.getIdentity() || personTemplate.getGroup() == Group.ADMIN) {
 				throw new ClientErrorException(403);
 			}
 		}
 
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
-		Person newPerson;
-		final boolean insertMode = person.getIdentity() == 0;
+		Person person;
+		final boolean insertMode = personTemplate.getIdentity() == 0;
 
 		if (insertMode) {
 			Document avatar = messengerManager.find(Document.class, 1L);
-			newPerson = new Person(avatar);
+			person = new Person(avatar);
 		} else {
-			newPerson = messengerManager.find(Person.class, person.getIdentity());
+			person = messengerManager.find(Person.class, personTemplate.getIdentity());
 		}
 
 		if (password != null) {
-			newPerson.setPasswordHash(Person.passwordHash(password));
+			person.setPasswordHash(Person.passwordHash(password));
 		}
 
-		newPerson.setMail(person.getMail());
-		newPerson.setGroup(person.getGroup());
-		newPerson.getAddress().setCity(person.getAddress().getCity());
-		newPerson.getAddress().setPostcode(person.getAddress().getPostcode());
-		newPerson.getAddress().setStreet(person.getAddress().getStreet());
-		newPerson.getName().setFamily(person.getName().getFamily());
-		newPerson.getName().setGiven(person.getName().getGiven());
+		person.setMail(personTemplate.getMail());
+		person.setGroup(personTemplate.getGroup());
+		person.getAddress().setCity(personTemplate.getAddress().getCity());
+		person.getAddress().setPostcode(personTemplate.getAddress().getPostcode());
+		person.getAddress().setStreet(personTemplate.getAddress().getStreet());
+		person.getName().setFamily(personTemplate.getName().getFamily());
+		person.getName().setGiven(personTemplate.getName().getGiven());
 
 		if (insertMode) {
-			messengerManager.persist(newPerson);
+			messengerManager.persist(person);
 		} else {
 			messengerManager.flush();
 		}
@@ -142,7 +143,7 @@ public class PersonService {
 		} finally {
 			messengerManager.getTransaction().begin();
 		}
-		return newPerson.getIdentity();
+		return person.getIdentity();
 	}
 
 	@GET
@@ -157,7 +158,9 @@ public class PersonService {
 		if (person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(PersonService.PERSON_COMPARATOR);
+		SortedSet<Person> sortedPeopleObserving = new TreeSet<>(
+				Comparator.comparing((Person p) -> p.getName().getFamily())
+						.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail));
 		sortedPeopleObserving.addAll(person.getPeopleObserving());
 
 		return sortedPeopleObserving;
@@ -181,24 +184,25 @@ public class PersonService {
 		}
 
 		Set<Person> peopleObserved = observer.getPeopleObserved();
-		Map<Long, Person> oldObserved = new HashMap<>();
-		peopleObserved.forEach(p -> oldObserved.put(p.getIdentity(), p));
-		Set<Long> joinedSet = new HashSet<>(observedIDs);
-		joinedSet.addAll(oldObserved.keySet());
+		Map<Long, Person> peopleObservedMap = new HashMap<>();
+		peopleObserved.forEach(p -> peopleObservedMap.put(p.getIdentity(), p));
+
 		Set<Long> idsToEvict = new HashSet<>();
-		for (long id : joinedSet) {
-			Person oldPerson = oldObserved.get(id);
-			boolean inNewSet = observedIDs.contains(id);
-			if (oldPerson != null && inNewSet) {
+		for (Map.Entry<Long, Person> entry : peopleObservedMap.entrySet()) {
+			boolean inNewSet = observedIDs.contains(entry.getKey());
+			if (entry.getValue() != null && inNewSet) {
 				// do nothing
-			} else if (oldPerson != null) {
+			} else if (entry.getValue() != null) {
 				// remove
-				peopleObserved.remove(oldPerson);
-				idsToEvict.add(id);
+				peopleObserved.remove(entry.getValue());
+				idsToEvict.add(entry.getKey());
 			} else {
 				// add
-				peopleObserved.add(messengerManager.find(Person.class, id));
-				idsToEvict.add(id);
+				Person person = messengerManager.find(Person.class, entry.getKey());
+				if (person != null) {
+					peopleObserved.add(person);
+					idsToEvict.add(entry.getKey());
+				}
 			}
 		}
 
@@ -227,7 +231,9 @@ public class PersonService {
 		if (person == null)
 			throw new ClientErrorException(NOT_FOUND);
 
-		SortedSet<Person> sortedPeopleObserved = new TreeSet<>(PersonService.PERSON_COMPARATOR);
+		SortedSet<Person> sortedPeopleObserved = new TreeSet<>(
+				Comparator.comparing((Person p) -> p.getName().getFamily())
+						.thenComparing((Person p) -> p.getName().getGiven()).thenComparing(Person::getMail));
 		sortedPeopleObserved.addAll(person.getPeopleObserved());
 
 		return sortedPeopleObserved;
@@ -270,7 +276,7 @@ public class PersonService {
 	@Path("{identity}/avatar")
 	@Consumes(WILDCARD)
 	public void putAvatar(@HeaderParam("Authorization") final String authentication,
-			@HeaderParam("Content-Type") final String contentType, final byte[] content,
+			@HeaderParam("Content-Type") final String contentType, @NotNull final byte[] content,
 			@PathParam("identity") final long identity) throws IOException {
 
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
@@ -284,35 +290,27 @@ public class PersonService {
 			throw new ClientErrorException(NOT_FOUND);
 		}
 
-		Document newDocument = null;
+		final Document avatar;
 
 		// leerer byte array
-		if (content == null) {
-			newDocument = messengerManager.find(Document.class, 1L);
+		if (content.length == 0) {
+			avatar = messengerManager.find(Document.class, 1L);
 		} else {
 			byte[] newContentHash = Document.mediaHash(content);
 
-			TypedQuery<Document> queryDocuments = messengerManager
-					.createQuery("SELECT d FROM Document d WHERE d.contentHash = :contentHash", Document.class);
-			queryDocuments.setParameter("contentHash", newContentHash);
+			TypedQuery<Long> query = messengerManager
+					.createQuery("SELECT d.identity FROM Document d WHERE d.contentHash = :contentHash", Long.class);
+			query.setParameter("contentHash", newContentHash);
 
-			Document document = null;
-			try {
-				document = queryDocuments.getSingleResult();
-			} catch (Exception e) {
-				System.err.println("Document not found, creating new one...");
-			}
-
-			if (document != null) {
-				newDocument = document;
-			} else {
+			List<Long> ids = query.getResultList();
+			if (ids.isEmpty()) {
 				// if send content hash not in database, create new document and save it in
 				// database
-				newDocument = new Document();
-				newDocument.setContent(content);
-				newDocument.setContentType(contentType);
+				avatar = new Document();
+				avatar.setContent(content);
+				avatar.setContentType(contentType);
 
-				messengerManager.persist(newDocument);
+				messengerManager.persist(avatar);
 				try {
 					// have to commit otherwise updating the person fails because document id not
 					// updated
@@ -320,11 +318,16 @@ public class PersonService {
 				} finally {
 					messengerManager.getTransaction().begin();
 				}
+			} else {
+				avatar = messengerManager.find(Document.class, ids.get(0));
+				if (avatar == null)
+					throw new ClientErrorException(Status.CONFLICT);
 			}
+
 		}
 
 		// update persons avatar
-		person.setAvatar(newDocument);
+		person.setAvatar(avatar);
 		try {
 			messengerManager.getTransaction().commit();
 		} finally {

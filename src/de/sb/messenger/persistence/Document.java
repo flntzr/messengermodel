@@ -13,6 +13,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
  * Created by Jakob Pfeiffer on 19.10.17.
@@ -39,7 +40,7 @@ public class Document extends BaseEntity {
 	@Pattern(regexp = "^[a-z]+/[a-z.+-]+$")
 	private String contentType;
 
-	@XmlElement
+	@XmlTransient
 	@NotNull
 	@Column(nullable = false, updatable = true)
 	@Size(min = 1, max = 16777215)
@@ -71,15 +72,6 @@ public class Document extends BaseEntity {
 		this.content = content;
 	}
 
-	static public byte[] mediaHash(byte[] content) {
-		try {
-			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			return messageDigest.digest(content);
-		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError(e);
-		}
-	}
-
 	@Override
 	public boolean equals(Object obj) {
 		if(obj.getClass() == Document.class) {
@@ -91,6 +83,15 @@ public class Document extends BaseEntity {
 
 		} else {
 			return false;
+		}
+	}
+	
+	static public byte[] mediaHash(byte[] content) {
+		try {
+			final MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			return messageDigest.digest(content);
+		} catch (NoSuchAlgorithmException e) {
+			throw new AssertionError(e);
 		}
 	}
 }
