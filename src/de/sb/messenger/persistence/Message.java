@@ -23,7 +23,8 @@ import javax.xml.bind.annotation.XmlTransient;
 @PrimaryKeyJoinColumn(name = "messageIdentity")
 public class Message extends BaseEntity {
 
-	@XmlTransient
+	// TODO: Change this back to XmlTransient if we figure out how this doesn't break MessageServiceTest.testIdentityQueries
+	@XmlElement
 	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "authorReference", nullable = false, updatable = false)
