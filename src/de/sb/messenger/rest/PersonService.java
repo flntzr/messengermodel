@@ -186,6 +186,7 @@ public class PersonService {
 		Set<Person> peopleObserved = observer.getPeopleObserved();
 		Map<Long, Person> peopleObservedMap = new HashMap<>();
 		peopleObserved.forEach(p -> peopleObservedMap.put(p.getIdentity(), p));
+		observedIDs.forEach(id -> peopleObservedMap.put(id, null));
 
 		Set<Long> idsToEvict = new HashSet<>();
 		for (Map.Entry<Long, Person> entry : peopleObservedMap.entrySet()) {
