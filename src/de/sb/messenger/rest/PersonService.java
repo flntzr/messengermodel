@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
 
@@ -44,6 +45,7 @@ public class PersonService {
 			@QueryParam("creationTimestampLower") final long creationTimestampLower,
 			@QueryParam("creationTimestampUpper") final long creationTimestampUpper) {
 		Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
+
 		final EntityManager messengerManagerLife = RestJpaLifecycleProvider.entityManager("messenger");
 
 		TypedQuery<Long> query = messengerManagerLife.createQuery(PersonService.SELECT_PERSONS_QUERY, Long.class);
@@ -100,10 +102,8 @@ public class PersonService {
 
 		// gives back 403, if requester is not ADMIN and does not alter himself or if he
 		// wants to change his group to ADMIN
-		if (requester.getGroup() != Group.ADMIN) {
-			if (requester.getIdentity() != personTemplate.getIdentity() || personTemplate.getGroup() == Group.ADMIN) {
-				throw new ClientErrorException(403);
-			}
+		if (requester.getGroup() != Group.ADMIN && requester.getIdentity() != personTemplate.getIdentity()) {
+			throw new ClientErrorException(FORBIDDEN);
 		}
 
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
@@ -172,9 +172,11 @@ public class PersonService {
 	public void setPeopleObserved(@HeaderParam("Authorization") final String authentication,
 			@PathParam("identity") final long identity, @FormParam("peopleObserved") final Set<Long> observedIDs) {
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
-		if (requester.getGroup() != Group.ADMIN) {
-			throw new NotAuthorizedException("Basic");
+
+		if (requester.getIdentity() != identity) {
+			throw new ClientErrorException(FORBIDDEN);
 		}
+
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person observer = messengerManager.find(Person.class, identity);
@@ -281,9 +283,10 @@ public class PersonService {
 			@PathParam("identity") final long identity) throws IOException {
 
 		final Person requester = Authenticator.authenticate(RestCredentials.newBasicInstance(authentication));
-		if (requester.getGroup() != Group.ADMIN) {
-			throw new NotAuthorizedException("Basic");
+		if (requester.getIdentity() != identity) {
+			throw new ClientErrorException(FORBIDDEN);
 		}
+
 		final EntityManager messengerManager = RestJpaLifecycleProvider.entityManager("messenger");
 
 		Person person = messengerManager.find(Person.class, identity);
