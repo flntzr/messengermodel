@@ -74,7 +74,7 @@ public class MessageService {
 
 		BaseEntity subject = messengerManager.find(BaseEntity.class, subjectReference);
 
-		if (subject == null || body == null) {
+		if (subject == null) {
 			throw new ClientErrorException(BAD_REQUEST);
 		}
 
@@ -87,7 +87,10 @@ public class MessageService {
 		try {
 			messengerManager.getTransaction().commit();
 		} catch (Exception e) {
-			e.printStackTrace(); // CloneNotSupportedException......
+			// suppress CloneNotSupportedException!
+			if(e.getCause() == null || !(e.getCause() instanceof CloneNotSupportedException)){
+				throw e;
+			}
 		} finally {
 			messengerManager.getTransaction().begin();
 		}
