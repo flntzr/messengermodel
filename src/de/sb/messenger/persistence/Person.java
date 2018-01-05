@@ -69,7 +69,8 @@ public class Person extends BaseEntity {
 	@XmlElement
 	private final Address address;
 
-	@NotNull
+	// nullable for templates in services
+//	@NotNull
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "avatarReference", nullable = false, updatable = true)
 	@XmlTransient
